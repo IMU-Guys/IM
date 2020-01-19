@@ -21,4 +21,8 @@ public class LongConnectionTaskDispatcher {
   public void postRunnableDelay(Runnable runnable, long delay) {
     mHandler.postDelayed(runnable, delay);
   }
+
+  public void removeRunnable(Runnable runnable) {
+    mHandler.removeCallbacks(runnable);
+  }
 }

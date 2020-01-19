@@ -28,6 +28,8 @@ public class LongConnectionContext {
   private Subject<Boolean> mOnDisconnectionSubject = PublishSubject.create();
   // 连接建立成功
   private Subject<Boolean> mOnConnectSuccessSubject = PublishSubject.create();
+  // 心跳超时
+  private Subject<Boolean> mOnHeartbeatOvertime = PublishSubject.create();
   private Disposable mOnConnectionFailedDisposable;
   private Disposable mOnConnectionSuccessDisposable;
   private int mReConnectCount;
@@ -52,7 +54,8 @@ public class LongConnectionContext {
     for (Map.Entry<String, SocketMessageListener> entry : mSocketMessageListeners.entrySet()) {
       mConnectionClient.getChannelHandler().addMessageListener(entry.getKey(), entry.getValue());
     }
-    mSocketMessageListeners.clear();
+    // 不要clear，在重连的时候还需要从这里取Listeners
+    // mSocketMessageListeners.clear();
   }
 
   public InetSocketAddress getInetSocketAddress() {
@@ -87,6 +90,10 @@ public class LongConnectionContext {
 
   public Subject<Boolean> getOnDisconnectionSubject() {
     return mOnDisconnectionSubject;
+  }
+
+  public Subject<Boolean> getOnHeartbeatOvertime() {
+    return mOnHeartbeatOvertime;
   }
 
   public int getReConnectCount() {
