@@ -1,6 +1,7 @@
 package com.imuguys.im.connection
 
 import android.util.Log
+import com.imuguys.im.connection.callback.LongConnectionCallback
 import com.imuguys.im.connection.message.AuthorityMessage
 import com.imuguys.im.connection.message.HeartbeatAckMessage
 import com.imuguys.im.connection.op.ConnectOp
@@ -73,6 +74,15 @@ class LongConnection : ILongConnection {
     override fun sendMessage(anyObject: Serializable) {
         mLongConnectionContext.longConnectionTaskDispatcher.postRunnable(
             SendMessageOp(mLongConnectionContext, anyObject)
+        )
+    }
+
+    override fun sendMessage(
+        anyObject: Serializable,
+        longConnectionCallback: LongConnectionCallback
+    ) {
+        mLongConnectionContext.longConnectionTaskDispatcher.postRunnable(
+            SendMessageOp(mLongConnectionContext, anyObject, longConnectionCallback)
         )
     }
 
