@@ -21,10 +21,11 @@ public class ConnectionBootstrap {
   public void configureBootstrap() {
     mBootstrap = new Bootstrap();
     mEventLoopGroup = new NioEventLoopGroup();
-    mBootstrap.group(mEventLoopGroup);
-    mBootstrap.channel(NioSocketChannel.class);
-    mBootstrap.option(ChannelOption.SO_KEEPALIVE, true);
-    mBootstrap.handler(new MessageChannelHandlerInitializer());
+    mBootstrap.group(mEventLoopGroup)
+        .channel(NioSocketChannel.class)
+        .option(ChannelOption.SO_KEEPALIVE, true)
+        .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10 * 1000)
+        .handler(new MessageChannelHandlerInitializer());
   }
 
   public ConnectionClient connect(InetSocketAddress inetSocketAddress) {

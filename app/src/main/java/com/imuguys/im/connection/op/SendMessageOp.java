@@ -38,11 +38,8 @@ public class SendMessageOp implements Runnable {
   public void run() {
     if (mLongConnectionContext.getConnectionClient() != null) {
       Log.v(TAG, "send message " + mPendingSendMessage.toString());
-      // todo 拆到编码器中
       ChannelFuture channelFuture = mLongConnectionContext.getConnectionClient().getChannel()
-          .writeAndFlush(Gsons.Companion.getGUYS_GSON()
-              .toJson(new SocketJsonMessage(mPendingSendMessage.getClass().getName(),
-                  Gsons.Companion.getGUYS_GSON().toJson(mPendingSendMessage))));
+          .writeAndFlush(mPendingSendMessage);
       // 回调之
       Optional.ofNullable(mLongConnectionCallback)
           .ifPresent(longConnectionCallback -> channelFuture.addListener(future -> {

@@ -37,7 +37,6 @@ public class ConnectOp implements Runnable {
       mLongConnectionContext.registerMessageListenerToChannelHandler();
     } catch (Exception e) {
       e.printStackTrace();
-      // todo reconnect
       Log.i(TAG, "connect failed!");
       connectionBootstrap.shutdown();
       mLongConnectionContext.getOnConnectFailedSubject().onNext(false);

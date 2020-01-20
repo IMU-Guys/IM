@@ -13,8 +13,7 @@ import java.util.concurrent.ConcurrentHashMap
  * Json处理
  * 处理收到的Json，通知MessageHandler
  */
-// todo JsonObjectDecode解码结果还是ByteBuf，暂时先把泛型改成ByteBuf，后面通过修改解码器解决这个问题
-class MessageChannelHandler : SimpleChannelInboundHandler<ByteBuf>() {
+class MessageChannelHandler : SimpleChannelInboundHandler<SocketJsonMessage>() {
 
     companion object {
         private const val TAG = "MessageChannelHandler"
@@ -34,11 +33,7 @@ class MessageChannelHandler : SimpleChannelInboundHandler<ByteBuf>() {
     /**
      * 收到读事件后的处理
      */
-    override fun channelRead0(ctx: ChannelHandlerContext?, msg: ByteBuf) {
-        val socketJsonMessage = Gsons.GUYS_GSON.fromJson(
-            msg.toString(CharsetUtil.UTF_8),
-            SocketJsonMessage::class.java
-        )
+    override fun channelRead0(ctx: ChannelHandlerContext?, socketJsonMessage: SocketJsonMessage) {
         val innerMessage =
             Gsons.GUYS_GSON.fromJson(
                 socketJsonMessage.classBytes,
