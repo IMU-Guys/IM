@@ -23,7 +23,7 @@ class LongConnection : ILongConnection {
 
     // todo LongConnectionContext 从外面传入进来
     private val mLongConnectionContext: LongConnectionContext =
-        LongConnectionContext("", 0)
+        LongConnectionContext("172.17.236.130", 8880)
     private var mConnectFailedDisposable: Disposable? = null
     private val mConnectSuccessDisposable: Disposable
     private val mDisConnectDisposable: Disposable

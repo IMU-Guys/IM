@@ -1,1 +1,1 @@
-include ':app', ':protocol'
+include ':app', ':protocol', ':guys-long-connection'

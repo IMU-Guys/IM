@@ -1,7 +1,7 @@
 package com.imuguys.im.connection.codec;
 
 import com.imuguys.im.connection.message.SocketJsonMessage;
-import com.imuguys.im.utils.Gsons;
+import com.imuguys.im.connection.utils.Gsons;
 
 import java.io.Serializable;
 import java.util.List;

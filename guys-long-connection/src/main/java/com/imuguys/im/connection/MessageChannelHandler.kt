@@ -2,11 +2,9 @@ package com.imuguys.im.connection
 
 import android.util.Log
 import com.imuguys.im.connection.message.SocketJsonMessage
-import com.imuguys.im.utils.Gsons
-import io.netty.buffer.ByteBuf
+import com.imuguys.im.connection.utils.Gsons
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.SimpleChannelInboundHandler
-import io.netty.util.CharsetUtil
 import java.util.concurrent.ConcurrentHashMap
 
 /**

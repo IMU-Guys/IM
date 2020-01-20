@@ -1,4 +1,4 @@
-package com.imuguys.im.utils
+package com.imuguys.im.connection.utils
 
 import com.google.gson.Gson
 

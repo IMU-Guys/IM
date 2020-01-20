@@ -4,8 +4,6 @@ import android.util.Log;
 
 import com.imuguys.im.connection.LongConnectionContext;
 import com.imuguys.im.connection.callback.LongConnectionCallback;
-import com.imuguys.im.connection.message.SocketJsonMessage;
-import com.imuguys.im.utils.Gsons;
 
 import java.io.Serializable;
 import java.util.Optional;
