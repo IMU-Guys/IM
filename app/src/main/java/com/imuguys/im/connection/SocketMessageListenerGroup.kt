@@ -1,9 +1,20 @@
 package com.imuguys.im.connection
 
 /**
- * 监听相同Message类型的SocketMessageListener应当被组合到一起统一处理
+ * 监听相同Message类型的SocketMessageListener组
  */
-class SocketMessageListenerGroup(messageClassName: String) {
+class SocketMessageListenerGroup<Message>(messageClassName: String) :
+    SocketMessageListener<Message> {
+    override fun handleMessage(message: Message) {
+        mSocketMessageListenerSet.forEach {
+            it.handleMessage(message)
+        }
+    }
+
     val mMessageClassName: String = messageClassName
-    var mSocketMessageListenerList = ArrayList<SocketMessageListener<*>>()
+    var mSocketMessageListenerSet = HashSet<SocketMessageListener<Message>>()
+
+    fun addMessageListener(messageListener: SocketMessageListener<Message>) {
+        mSocketMessageListenerSet.add(messageListener)
+    }
 }

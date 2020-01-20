@@ -4,6 +4,7 @@ import androidx.annotation.Nullable;
 
 import java.net.InetSocketAddress;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import io.reactivex.disposables.Disposable;
@@ -21,7 +22,8 @@ public class LongConnectionContext {
   private int mPort;
   private ConnectionClient mConnectionClient;
   private LongConnectionTaskDispatcher mLongConnectionTaskDispatcher;
-  private Map<String, SocketMessageListener> mSocketMessageListeners = new ConcurrentHashMap<>();
+  private Map<String, SocketMessageListenerGroup> mSocketMessageListeners =
+      new ConcurrentHashMap<>();
   // 还未建立连接时，无法建立连接
   private Subject<Boolean> mOnConnectFailedSubject = PublishSubject.create();
   // 已经建立连接，断开
@@ -44,14 +46,21 @@ public class LongConnectionContext {
         mOnConnectSuccessSubject.subscribe(ignored -> mReConnectCount = 0);
   }
 
+  @SuppressWarnings("unchecked")
   public <Message> void registerMessageListener(String messageClassName,
       SocketMessageListener<Message> socketMessageListener) {
-    mSocketMessageListeners.put(messageClassName, socketMessageListener);
+    Optional.ofNullable(mSocketMessageListeners.get(messageClassName))
+        .orElseGet(() -> {
+          SocketMessageListenerGroup<Message> group =
+              new SocketMessageListenerGroup<>(messageClassName);
+          mSocketMessageListeners.put(messageClassName, group);
+          return group;
+        }).addMessageListener(socketMessageListener);
   }
 
   @SuppressWarnings("unchecked")
   public void registerMessageListenerToChannelHandler() {
-    for (Map.Entry<String, SocketMessageListener> entry : mSocketMessageListeners.entrySet()) {
+    for (Map.Entry<String, SocketMessageListenerGroup> entry : mSocketMessageListeners.entrySet()) {
       mConnectionClient.getChannelHandler().addMessageListener(entry.getKey(), entry.getValue());
     }
     // 不要clear，在重连的时候还需要从这里取Listeners
