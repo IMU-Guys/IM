@@ -19,13 +19,13 @@ public class SocketJsonMessageCodec extends MessageToMessageCodec<ByteBuf, Seria
   @Override
   protected void encode(ChannelHandlerContext ctx, Serializable msg, List<Object> out)
       throws Exception {
-    out.add(Gsons.Companion.getGUYS_GSON().toJson(new SocketJsonMessage(msg.getClass().getName(),
-        Gsons.Companion.getGUYS_GSON().toJson(msg))));
+    out.add(Gsons.GUYS_GSON.toJson(new SocketJsonMessage(msg.getClass().getName(),
+        Gsons.GUYS_GSON.toJson(msg))));
   }
 
   @Override
   protected void decode(ChannelHandlerContext ctx, ByteBuf msg, List<Object> out) throws Exception {
-    out.add(Gsons.Companion.getGUYS_GSON()
+    out.add(Gsons.GUYS_GSON
         .fromJson(msg.toString(CharsetUtil.UTF_8), SocketJsonMessage.class));
   }
 }
