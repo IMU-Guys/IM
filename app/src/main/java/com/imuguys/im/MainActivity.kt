@@ -6,6 +6,7 @@ import android.os.Handler
 import android.widget.Toast
 import androidx.databinding.DataBindingUtil
 import com.imuguys.im.connection.LongConnection
+import com.imuguys.im.connection.LongConnectionParams
 import com.imuguys.im.connection.SocketMessageListener
 import com.imuguys.im.connection.message.AuthorityMessage
 import com.imuguys.im.databinding.ActivityMainBinding
@@ -16,7 +17,7 @@ import kotlinx.coroutines.launch
 class MainActivity : AppCompatActivity() {
 
     private val mHandler = Handler()
-    private val messageLongConnection = LongConnection()
+    private val messageLongConnection = LongConnection(LongConnectionParams("", 0))
     private lateinit var mMainActivityDataBinding: ActivityMainBinding
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

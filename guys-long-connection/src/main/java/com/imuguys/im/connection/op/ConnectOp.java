@@ -23,7 +23,8 @@ public class ConnectOp implements Runnable {
   public void run() {
     new DisconnectOp(mLongConnectionContext).run();
     ConnectionBootstrap connectionBootstrap = new ConnectionBootstrap();
-    connectionBootstrap.configureBootstrap();
+    connectionBootstrap
+        .configureBootstrap(mLongConnectionContext.getLongConnectionParams().getConnectTimeOut());
     try {
       Log.i(TAG, "try to connect...");
       ConnectionClient connectionClient =

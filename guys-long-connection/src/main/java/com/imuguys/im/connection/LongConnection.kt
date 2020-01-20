@@ -15,15 +15,14 @@ import java.util.concurrent.TimeUnit
 /**
  * 长链接实现类，支持传递Json
  */
-class LongConnection : ILongConnection {
+class LongConnection(longConnectionParams: LongConnectionParams) : ILongConnection {
 
     companion object {
         const val TAG = "LongConnection"
     }
 
-    // todo LongConnectionContext 从外面传入进来
     private val mLongConnectionContext: LongConnectionContext =
-        LongConnectionContext("172.17.236.130", 8880)
+        LongConnectionContext(longConnectionParams)
     private var mConnectFailedDisposable: Disposable? = null
     private val mConnectSuccessDisposable: Disposable
     private val mDisConnectDisposable: Disposable
@@ -108,13 +107,18 @@ class LongConnection : ILongConnection {
     }
 
     override fun connect() {
+        // 重连次数
+        val attemptToReconnectionCountLimit =
+            mLongConnectionContext.longConnectionParams.attemptToReconnectionCountLimit
+        // 重连间隔
+        val attemptToReconnectionIntervalLimitMs =
+            mLongConnectionContext.longConnectionParams.attemptToReconnectionIntervalLimitMs
         Log.i(TAG, "connect")
         // 重连处理，3秒间隔，5次重连
         mConnectFailedDisposable?.dispose()
-        // todo 把重连次数和间隔放入到LongConnectionContext
         mConnectFailedDisposable = mLongConnectionContext.onConnectFailedSubject
-            .filter { mLongConnectionContext.reConnectCount <= 5 }
-            .delay(3L, TimeUnit.SECONDS)
+            .filter { mLongConnectionContext.reConnectCount <= attemptToReconnectionCountLimit }
+            .delay(attemptToReconnectionIntervalLimitMs, TimeUnit.MILLISECONDS)
             .subscribe {
                 Log.i(TAG, "reconnect")
                 mLongConnectionContext.longConnectionTaskDispatcher.postRunnable(

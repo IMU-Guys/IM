@@ -18,13 +18,13 @@ public class ConnectionBootstrap {
   private Bootstrap mBootstrap;
   private EventLoopGroup mEventLoopGroup;
 
-  public void configureBootstrap() {
+  public void configureBootstrap(int connectTimeOutMs) {
     mBootstrap = new Bootstrap();
     mEventLoopGroup = new NioEventLoopGroup();
     mBootstrap.group(mEventLoopGroup)
         .channel(NioSocketChannel.class)
         .option(ChannelOption.SO_KEEPALIVE, true)
-        .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10 * 1000)
+        .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, connectTimeOutMs)
         .handler(new MessageChannelHandlerInitializer());
   }
 

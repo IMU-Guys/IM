@@ -18,8 +18,7 @@ public class LongConnectionContext {
 
   private static final String TAG = "LongConnectionContext";
 
-  private String mHost;
-  private int mPort;
+  private LongConnectionParams mLongConnectionParams;
   private ConnectionClient mConnectionClient;
   private LongConnectionTaskDispatcher mLongConnectionTaskDispatcher;
   private Map<String, SocketMessageListenerGroup> mSocketMessageListeners =
@@ -36,9 +35,8 @@ public class LongConnectionContext {
   private Disposable mOnConnectionSuccessDisposable;
   private int mReConnectCount;
 
-  public LongConnectionContext(String host, int port) {
-    mHost = host;
-    mPort = port;
+  public LongConnectionContext(LongConnectionParams longConnectionParams) {
+    mLongConnectionParams = longConnectionParams;
     // 记录重连次数，重置重连次数
     mOnConnectionFailedDisposable =
         mOnConnectFailedSubject.subscribe(ignored -> mReConnectCount++);
@@ -68,7 +66,7 @@ public class LongConnectionContext {
   }
 
   public InetSocketAddress getInetSocketAddress() {
-    return new InetSocketAddress(mHost, mPort);
+    return new InetSocketAddress(mLongConnectionParams.getHost(), mLongConnectionParams.getPort());
   }
 
   @Nullable
@@ -87,6 +85,14 @@ public class LongConnectionContext {
   public void setLongConnectionTaskDispatcher(
       LongConnectionTaskDispatcher longConnectionTaskDispatcher) {
     mLongConnectionTaskDispatcher = longConnectionTaskDispatcher;
+  }
+
+  public LongConnectionParams getLongConnectionParams() {
+    return mLongConnectionParams;
+  }
+
+  public void setLongConnectionParams(LongConnectionParams longConnectionParams) {
+    mLongConnectionParams = longConnectionParams;
   }
 
   public Subject<Boolean> getOnConnectSuccessSubject() {
