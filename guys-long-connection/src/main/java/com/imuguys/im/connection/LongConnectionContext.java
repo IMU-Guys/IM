@@ -25,8 +25,8 @@ public class LongConnectionContext {
       new ConcurrentHashMap<>();
   // 还未建立连接时，无法建立连接
   private Subject<Boolean> mOnConnectFailedSubject = PublishSubject.create();
-  // 已经建立连接，断开
-  private Subject<Boolean> mOnDisconnectionSubject = PublishSubject.create();
+  // 已经建立连接，被服务端断开
+  private Subject<Boolean> mOnRemoteDisconnectSubject = PublishSubject.create();
   // 连接建立成功
   private Subject<Boolean> mOnConnectSuccessSubject = PublishSubject.create();
   // 心跳超时
@@ -69,6 +69,11 @@ public class LongConnectionContext {
     return new InetSocketAddress(mLongConnectionParams.getHost(), mLongConnectionParams.getPort());
   }
 
+  /**
+   * 获取长链接客户端
+   * @return mConnectionClient 如果已经成功建立连接 , null else
+   *
+   */
   @Nullable
   public ConnectionClient getConnectionClient() {
     return mConnectionClient;
@@ -103,8 +108,8 @@ public class LongConnectionContext {
     return mOnConnectFailedSubject;
   }
 
-  public Subject<Boolean> getOnDisconnectionSubject() {
-    return mOnDisconnectionSubject;
+  public Subject<Boolean> getOnRemoteDisconnectSubject() {
+    return mOnRemoteDisconnectSubject;
   }
 
   public Subject<Boolean> getOnHeartbeatOvertime() {

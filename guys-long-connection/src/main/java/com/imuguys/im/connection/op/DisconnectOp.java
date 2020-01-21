@@ -20,5 +20,7 @@ public class DisconnectOp implements Runnable {
   public void run() {
     Optional.ofNullable(mLongConnectionContext.getConnectionClient())
         .ifPresent(ConnectionClient::close);
+    // 断开连接后将长链接客户端置为null，用来防止多余的SendMessageOp积压
+    mLongConnectionContext.setConnectionClient(null);
   }
 }

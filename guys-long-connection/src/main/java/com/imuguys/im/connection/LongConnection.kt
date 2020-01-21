@@ -51,7 +51,11 @@ class LongConnection(longConnectionParams: LongConnectionParams) : ILongConnecti
                 startHeartbeat()
             }
         // 连接断开处理
-        mDisConnectDisposable = mLongConnectionContext.onDisconnectionSubject.subscribe()
+        mDisConnectDisposable = mLongConnectionContext.onRemoteDisconnectSubject.subscribe {
+            Log.i(TAG, "remote peer reset this connection!, stop heartbeat, disconnect connection")
+            stopHeartbeat()
+            disconnect()
+        }
         mHeartbeatOvertimeDisposable = mLongConnectionContext.onHeartbeatOvertime.subscribe {
             stopHeartbeat()
             connect()
@@ -96,8 +100,6 @@ class LongConnection(longConnectionParams: LongConnectionParams) : ILongConnecti
     }
 
     override fun disconnect() {
-        // 停止心跳
-        stopHeartbeat()
         mConnectFailedDisposable?.dispose()
         mConnectSuccessDisposable.dispose()
         mLongConnectionContext.release()

@@ -50,6 +50,9 @@ public class SendMessageOp implements Runnable {
             }
           }));
     } else {
+      Optional.ofNullable(mLongConnectionCallback)
+          .ifPresent(longConnectionCallback -> longConnectionCallback
+              .onFailed(new IllegalStateException("ConnectionClient has not bean initialized")));
       Log.w(TAG, "ConnectionClient has not benn initialization, message ignored");
     }
   }

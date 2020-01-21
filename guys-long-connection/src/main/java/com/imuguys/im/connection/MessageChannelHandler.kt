@@ -24,7 +24,7 @@ class MessageChannelHandler : SimpleChannelInboundHandler<SocketJsonMessage>() {
      * 连接断开，可能是由于服务端主动断开
      */
     override fun channelInactive(ctx: ChannelHandlerContext?) {
-        mLongConnectionContext?.onDisconnectionSubject!!.onNext(false)
+        mLongConnectionContext?.onRemoteDisconnectSubject!!.onNext(false)
         super.channelInactive(ctx)
     }
 

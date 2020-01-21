@@ -7,7 +7,7 @@ import com.imuguys.im.connection.ConnectionClient;
 import com.imuguys.im.connection.LongConnectionContext;
 
 /**
- * 连接操作
+ * 连接操作,会产生阻塞
  */
 public class ConnectOp implements Runnable {
 
