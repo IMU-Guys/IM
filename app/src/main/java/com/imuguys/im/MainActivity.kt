@@ -17,7 +17,7 @@ import kotlinx.coroutines.launch
 class MainActivity : AppCompatActivity() {
 
     private val mHandler = Handler()
-    private val messageLongConnection = LongConnection(LongConnectionParams("", 0))
+    private val messageLongConnection = LongConnection(LongConnectionParams("192.168.0.104", 8880))
     private lateinit var mMainActivityDataBinding: ActivityMainBinding
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
