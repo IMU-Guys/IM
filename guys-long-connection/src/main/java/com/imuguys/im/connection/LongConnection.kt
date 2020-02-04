@@ -47,7 +47,7 @@ class LongConnection(longConnectionParams: LongConnectionParams) : ILongConnecti
         mConnectSuccessDisposable = mLongConnectionContext.onConnectSuccessSubject
             .subscribe {
                 mConnectFailedDisposable?.dispose()
-                sendMessage(AuthorityMessage("nice"))
+                sendMessage(AuthorityMessage("user","pwd"))
                 startHeartbeat()
             }
         // 连接断开处理

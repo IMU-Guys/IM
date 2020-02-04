@@ -9,6 +9,7 @@ import com.imuguys.im.connection.LongConnection
 import com.imuguys.im.connection.LongConnectionParams
 import com.imuguys.im.connection.SocketMessageListener
 import com.imuguys.im.connection.message.AuthorityMessage
+import com.imuguys.im.connection.message.AuthorityResponseMessage
 import com.imuguys.im.databinding.ActivityMainBinding
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
@@ -17,7 +18,7 @@ import kotlinx.coroutines.launch
 class MainActivity : AppCompatActivity() {
 
     private val mHandler = Handler()
-    private val messageLongConnection = LongConnection(LongConnectionParams("192.168.0.104", 8880))
+    private val messageLongConnection = LongConnection(LongConnectionParams("192.168.0.103", 8880))
     private lateinit var mMainActivityDataBinding: ActivityMainBinding
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,7 +30,7 @@ class MainActivity : AppCompatActivity() {
     private fun initView() {
         mMainActivityDataBinding.sendAuthorityMessage.setOnClickListener {
             messageLongConnection.sendMessage(
-                AuthorityMessage("abc")
+                AuthorityMessage("user","pwd")
             )
         }
     }
@@ -43,9 +44,9 @@ class MainActivity : AppCompatActivity() {
     private fun debugLongConnection() {
         messageLongConnection.connect()
         messageLongConnection.registerMessageHandler(
-            AuthorityMessage::class.java.name,
-            object : SocketMessageListener<AuthorityMessage> {
-                override fun handleMessage(message: AuthorityMessage) {
+            AuthorityResponseMessage::class.java.name,
+            object : SocketMessageListener<AuthorityResponseMessage> {
+                override fun handleMessage(message: AuthorityResponseMessage) {
                     mHandler.post {
                         mMainActivityDataBinding.serverInformation.text = message.toString()
                         Toast.makeText(
@@ -58,7 +59,7 @@ class MainActivity : AppCompatActivity() {
             })
         GlobalScope.launch {
             delay(3000)
-            messageLongConnection.sendMessage(AuthorityMessage("abc"))
+            messageLongConnection.sendMessage(AuthorityMessage("user","pwd"))
         }
     }
 }
