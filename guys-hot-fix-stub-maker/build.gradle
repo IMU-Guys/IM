@@ -1,0 +1,31 @@
+apply plugin: 'groovy'
+apply plugin: 'maven'
+
+dependencies {
+    implementation gradleApi()
+    implementation localGroovy()
+    implementation 'com.android.tools.build:gradle:3.5.3'
+    implementation 'com.android.tools.build:transform-api:1.5.0'
+    implementation 'org.aspectj:aspectjrt:1.8.11'
+    implementation 'org.javassist:javassist:3.26.0-GA'
+}
+repositories {
+    maven {
+        url uri('../imuguys-repositories')
+    }
+    mavenCentral()
+}
+
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            //设置插件的GAV参数
+            pom.groupId = 'com.imuguys.hotfix'
+            pom.artifactId = 'stub'
+            pom.version = '1.0.0'
+            //文件发布到下面目录
+            repository(url: uri('../imuguys-repositories'))
+        }
+    }
+}

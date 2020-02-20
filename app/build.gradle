@@ -6,6 +6,21 @@ apply plugin: 'kotlin-android-extensions'
 
 apply plugin: 'kotlin-kapt'
 
+apply plugin: 'imuguys-hotfix-stub'
+
+buildscript {
+    repositories {
+        maven {
+            url uri('../imuguys-repositories')
+        }
+        google()
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.imuguys.hotfix:stub:1.0.0'
+    }
+}
+
 android {
     compileSdkVersion 28
     defaultConfig {
