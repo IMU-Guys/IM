@@ -12,10 +12,12 @@ import java.util.zip.ZipOutputStream;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.jetbrains.annotations.NotNull;
 
 import com.android.build.api.transform.Format;
 import com.android.build.api.transform.JarInput;
 import com.android.build.api.transform.TransformOutputProvider;
+import com.imuguys.hotfix.common.HotFixConfig;
 
 import javassist.CtClass;
 import javassist.CtField;
@@ -81,15 +83,15 @@ public class GuysStubMakerInjector {
           continue;
         }
         // 抽象类、接口跳过
-        if (targetClass.getClassFile().isAbstract()
-            || targetClass.getClassFile().isInterface()) {
+        if ((targetClass.getModifiers() & (Modifier.ABSTRACT | Modifier.INTERFACE)) > 0) {
           writeClassByteCode(targetClass, jarOutPutStream, entryName);
           continue;
         }
         CtMethod errorMethod = null;
         try {
-          CtField patchFiled = new CtField(mGuysStubMakerContext.getIPatchCtClass(),
-              "sGuysHotFixPatch", targetClass);
+          CtField patchFiled = new CtField(
+              mGuysStubMakerContext.getClassPool().get(GuysStubMakerContext.mIPatchClassName),
+              HotFixConfig.PATCH_FIELD_NAME, targetClass);
           patchFiled.setModifiers(Modifier.PRIVATE | Modifier.STATIC);
           targetClass.addField(patchFiled);
           for (CtMethod method : targetClass.getDeclaredMethods()) {
@@ -125,6 +127,7 @@ public class GuysStubMakerInjector {
 
   /**
    * 是否包含需要插桩的类
+   * 
    * @param enumeration Jar中的所有Entry
    * @return
    */
@@ -162,40 +165,20 @@ public class GuysStubMakerInjector {
     }
   }
 
-  /**
-   * 给指定方法插桩
-   * BUG: 没有强制转换将导致错误
-   * 
-   * @param method 指定方法
-   * @return 插桩内容
-   *         有返回值方法:exp
-   *         <p>
-   *         if (sGuysHotFixPatch != null) {
-   *         return (ReturnType) sGuysHotFixPatch.invokePatch("getConnectTimeOut",$args,$0);
-   *         }
-   *         <p/>
-   *         无返回值方法:exp
-   *         <p>
-   *         if (sGuysHotFixPatch != null) {
-   *         sGuysHotFixPatch.invokePatch("onCancelled",$args,$0);
-   *         return;
-   *         }
-   *         <p/>
-   */
   private String createPatchInvokeString(CtMethod method)
       throws NotFoundException {
-
     StringBuilder sb = new StringBuilder();
-    sb.append("if (sGuysHotFixPatch != null) {");
+    sb.append("if (").append(HotFixConfig.PATCH_FIELD_NAME).append(" != null) {");
     if (!method.getReturnType().getName().equals("void")) {
       sb.append("return ")
           .append("($r)");
     }
-    sb.append("sGuysHotFixPatch.invokePatch(")
+    String paramsTypeString = generateParamsTypeString(method);
+    sb.append(HotFixConfig.PATCH_FIELD_NAME)
+        .append(".invokePatch(")
         .append("\"")
         .append(method.getName())
-        .append("\"")
-        .append(", $args,");
+        .append("\"").append(", $args,").append(paramsTypeString).append(",");
     if ((method.getModifiers() & Modifier.STATIC) > 0) {
       sb.append("null);");
     } else {
@@ -208,5 +191,25 @@ public class GuysStubMakerInjector {
     }
     System.out.println(sb.toString());
     return sb.toString();
+  }
+
+  @NotNull
+  private String generateParamsTypeString(CtMethod method) throws NotFoundException {
+    StringBuilder paramsTypeStringBuilder = new StringBuilder();
+    if (method.getParameterTypes().length == 0) {
+      paramsTypeStringBuilder.append("null");
+    } else {
+      paramsTypeStringBuilder.append("new java.lang.Class[]{");
+      for (int i = 0; i < method.getParameterTypes().length; i++) {
+        CtClass paramTypeCtClass = method.getParameterTypes()[i];
+        if (i == 0) {
+          paramsTypeStringBuilder.append(paramTypeCtClass.getName()).append(".class");
+        } else {
+          paramsTypeStringBuilder.append(",").append(paramTypeCtClass.getName()).append(".class");
+        }
+      }
+      paramsTypeStringBuilder.append("}");
+    }
+    return paramsTypeStringBuilder.toString();
   }
 }

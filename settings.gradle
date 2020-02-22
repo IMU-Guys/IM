@@ -1,1 +1,1 @@
-include ':app', ':protocol', ':guys-long-connection', ':application', ':guys-hot-fix-stub-maker'
+include ':app', ':protocol', ':guys-long-connection', ':application', ':guys-hot-fix-stub-maker', ':guys-hot-fix-patch-maker', ':guys-hot-fix-common'

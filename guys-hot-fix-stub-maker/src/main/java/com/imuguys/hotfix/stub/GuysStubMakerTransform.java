@@ -100,7 +100,5 @@ public class GuysStubMakerTransform extends Transform {
         }
       });
     });
-    mGuysStubMakerContext
-        .setIPatchClassFullyQualifiedName("com.imuguys.im.hotfix.IGuysHotFixPatch");
   }
 }

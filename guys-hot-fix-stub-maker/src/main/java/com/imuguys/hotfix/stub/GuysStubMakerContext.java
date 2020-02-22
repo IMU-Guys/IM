@@ -5,6 +5,8 @@ import java.util.function.Predicate;
 import org.gradle.api.Project;
 
 import com.android.build.gradle.AppExtension;
+import com.imuguys.hotfix.common.HotFixConfig;
+import com.imuguys.hotfix.common.IGuysHotFixPatch;
 
 import javassist.ClassPool;
 import javassist.CtClass;
@@ -18,8 +20,8 @@ public class GuysStubMakerContext {
   private Predicate<String> mTargetClassPredicate;
   // 不对lambda插桩
   private boolean mExcludeLambda;
-  // 补丁CtClass
-  private CtClass mIPatchCtClass;
+  // 补丁CtClassName
+  public static final String mIPatchClassName = IGuysHotFixPatch.class.getName();
 
   public void addAndroidJarToClassPool() {
     mProject.getExtensions().getByType(AppExtension.class).getBootClasspath().forEach(file -> {
@@ -38,19 +40,6 @@ public class GuysStubMakerContext {
 
   public Predicate<String> getTargetClassPredicate() {
     return mTargetClassPredicate;
-  }
-
-  public void setIPatchClassFullyQualifiedName(String patchClassFullyQualifiedName) {
-    try {
-      mIPatchCtClass = mClassPool.get(patchClassFullyQualifiedName);
-    } catch (NotFoundException e) {
-      e.printStackTrace();
-      throw new RuntimeException(e);
-    }
-  }
-
-  public CtClass getIPatchCtClass() {
-    return mIPatchCtClass;
   }
 
   public ClassPool getClassPool() {

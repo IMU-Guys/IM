@@ -10,6 +10,7 @@ import com.imuguys.im.connection.LongConnectionParams
 import com.imuguys.im.connection.SocketMessageListener
 import com.imuguys.im.connection.message.AuthorityMessage
 import com.imuguys.im.connection.message.AuthorityResponseMessage
+import com.imuguys.im.connection.test.Test
 import com.imuguys.im.databinding.ActivityMainBinding
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
@@ -22,6 +23,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var mMainActivityDataBinding: ActivityMainBinding
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Toast.makeText(this, Test.gettt(), Toast.LENGTH_SHORT).show()
         mMainActivityDataBinding = DataBindingUtil.setContentView(this, R.layout.activity_main)
         initView()
         debugLongConnection()
@@ -30,7 +32,7 @@ class MainActivity : AppCompatActivity() {
     private fun initView() {
         mMainActivityDataBinding.sendAuthorityMessage.setOnClickListener {
             messageLongConnection.sendMessage(
-                AuthorityMessage("user","pwd")
+                AuthorityMessage("user", "pwd")
             )
         }
     }
@@ -59,7 +61,7 @@ class MainActivity : AppCompatActivity() {
             })
         GlobalScope.launch {
             delay(3000)
-            messageLongConnection.sendMessage(AuthorityMessage("user","pwd"))
+            messageLongConnection.sendMessage(AuthorityMessage("user", "pwd"))
         }
     }
 }
