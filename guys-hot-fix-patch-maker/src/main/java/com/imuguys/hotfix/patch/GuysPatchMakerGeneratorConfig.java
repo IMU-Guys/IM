@@ -1,12 +1,8 @@
 package com.imuguys.hotfix.patch;
 
-import com.imuguys.hotfix.common.GuysHotFixPatchImpl;
+import com.imuguys.hotfix.common.IGuysHotFixPatch;
 import com.imuguys.hotfix.common.ModifyClass;
 import com.imuguys.hotfix.common.ModifyMethod;
-
-import java.util.function.Predicate;
-
-import org.gradle.api.Project;
 
 import javassist.ClassPool;
 
@@ -15,7 +11,7 @@ public class GuysPatchMakerGeneratorConfig {
   private ClassPool mClassPool = ClassPool.getDefault();
   private String mPatchClassAnnotationClassName = ModifyClass.class.getName();
   private String mPatchMethodAnnotationClassName = ModifyMethod.class.getName();
-  private String mPatchClassName = GuysHotFixPatchImpl.class.getName();
+  private String mPatchClassName = IGuysHotFixPatch.class.getName();
 
   public ClassPool getClassPool() {
     return mClassPool;

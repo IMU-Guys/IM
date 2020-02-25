@@ -15,6 +15,7 @@ import com.imuguys.im.databinding.ActivityMainBinding
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.lang.reflect.Field
 
 class MainActivity : AppCompatActivity() {
 
@@ -23,7 +24,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var mMainActivityDataBinding: ActivityMainBinding
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Toast.makeText(this, Test.gettt(), Toast.LENGTH_SHORT).show()
+        val test = Test()
+        Toast.makeText(this, test.getTestString(), Toast.LENGTH_SHORT).show()
         mMainActivityDataBinding = DataBindingUtil.setContentView(this, R.layout.activity_main)
         initView()
         debugLongConnection()
