@@ -50,8 +50,8 @@ public class PatchUpHelper {
         String[] classNameArray = line.split(HotFixConfig.CONFIG_FILE_SPLIT);
         Class<?> bugClass =
             Thread.currentThread().getContextClassLoader().loadClass(classNameArray[0]);
-        Class<?> patchClassControllerClass = patchClassLoader.loadClass(classNameArray[1]);
-        patchClassLoader.loadClass(classNameArray[2]);
+        Class<?> patchClassControllerClass = patchClassLoader.loadClass(classNameArray[2]);
+        patchClassLoader.loadClass(classNameArray[1]);
         Field sGuysHotFixPatch = bugClass.getDeclaredField(HotFixConfig.PATCH_CONTROLLER_FIELD_NAME);
         sGuysHotFixPatch.setAccessible(true);
         sGuysHotFixPatch.set(null, patchClassControllerClass.newInstance());

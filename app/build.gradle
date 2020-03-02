@@ -66,6 +66,7 @@ dependencies {
     implementation group: 'io.netty', name: 'netty-all', version: '4.1.44.Final'
     implementation group: 'com.google.protobuf', name: 'protobuf-java', version: '3.11.1'
     implementation group: 'com.google.code.gson', name: 'gson', version: '2.8.5'
+    implementation 'org.javassist:javassist:3.26.0-GA'
     implementation project(':guys-long-connection')
     implementation project(':application')
     implementation project(':guys-hot-fix-common')

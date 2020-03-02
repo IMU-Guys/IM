@@ -20,6 +20,19 @@ public class GuysReflectUtils {
     return null;
   }
 
+  public static Object getFieldValue(Class clazz, String fieldName, Object host) {
+    try {
+      Field declaredField = clazz.getDeclaredField(fieldName);
+      if (!declaredField.isAccessible()) {
+        declaredField.setAccessible(true);
+      }
+      return declaredField.get(host);
+    } catch (IllegalAccessException | NoSuchFieldException e) {
+      e.printStackTrace();
+    }
+    return null;
+  }
+
   public static void setFieldValue(String className, String fieldName, Object host, Object value) {
     try {
       Field declaredField = Class.forName(className).getDeclaredField(fieldName);
@@ -32,6 +45,18 @@ public class GuysReflectUtils {
     }
   }
 
+  public static void setFieldValue(Class clazz, String fieldName, Object host, Object value) {
+    try {
+      Field declaredField = clazz.getDeclaredField(fieldName);
+      if (!declaredField.isAccessible()) {
+        declaredField.setAccessible(true);
+      }
+      declaredField.set(host, value);
+    } catch (IllegalAccessException | NoSuchFieldException e) {
+      e.printStackTrace();
+    }
+  }
+
   public static void setFieldValue(String className, String fieldName, Object host, int value) {
     try {
       Field declaredField = Class.forName(className).getDeclaredField(fieldName);
@@ -40,6 +65,18 @@ public class GuysReflectUtils {
       }
       declaredField.set(host, value);
     } catch (IllegalAccessException | NoSuchFieldException | ClassNotFoundException e) {
+      e.printStackTrace();
+    }
+  }
+
+  public static void setFieldValue(Class clazz, String fieldName, Object host, int value) {
+    try {
+      Field declaredField = clazz.getDeclaredField(fieldName);
+      if (!declaredField.isAccessible()) {
+        declaredField.setAccessible(true);
+      }
+      declaredField.set(host, value);
+    } catch (IllegalAccessException | NoSuchFieldException  e) {
       e.printStackTrace();
     }
   }

@@ -96,39 +96,40 @@ public class GuysPatchMakerGenerator {
                   public void edit(FieldAccess f) throws CannotCompileException {
                     super.edit(f);
                     try {
-                      System.out.println(f.getField().getDeclaringClass().getName());
-                      String fieldDeclaredClassName; // 属性所在的类名称
-                      String fieldOwner; // 执行反射的对象的名称
-                      if (f.getField().getDeclaringClass().getName().equals(patchClass.getName())) {
-                        fieldDeclaredClassName = srcClass.getName();
-                        fieldOwner = "mHost";
-                      } else if (patchClass.subclassOf(f.getField().getDeclaringClass())) {
-                        fieldDeclaredClassName = f.getField().getDeclaringClass().getName();
-                        fieldOwner = "mHost";
-                      } else {
-                        fieldDeclaredClassName = f.getField().getDeclaringClass().getName();
-                        fieldOwner = "$0";
-                      }
+                      String fieldRealDeclaredClassName =
+                          f.getField().getDeclaringClass().getName().endsWith(patchClass.getName())
+                              ? srcClass.getName()
+                              : f.getField().getDeclaringClass().getName();
                       if (f.isReader()) {
                         StringBuilder sb = new StringBuilder("{");
-                        sb.append("$_ = (").append("$r").append(")")
+                        sb.append("java.lang.Object instance;")
+                            .append("if ($0 instanceof ").append(patchClass.getName()).append(") {")
+                            .append("instance = ((").append(patchClass.getName())
+                            .append(")$0).mHost;}")
+                            .append("else {instance = $0;}")
+                            .append("$_ = ($r) ")
                             .append("com.imuguys.hotfix.common.GuysReflectUtils.getFieldValue(")
-                            .append("\"").append(fieldDeclaredClassName).append("\"").append(",")
+                            .append(fieldRealDeclaredClassName).append(".class")
+                            .append(",")
                             .append("\"").append(f.getFieldName()).append("\"").append(",")
-                            .append(fieldOwner).append(");");
+                            .append("instance").append(");");
                         sb.append("}");
-                        System.out.println("f: " + sb.toString());
+                        System.out.println(sb.toString());
                         f.replace(sb.toString());
                       } else {
                         StringBuilder sb = new StringBuilder("{");
-                        sb.append("com.imuguys.hotfix.common.GuysReflectUtils.setFieldValue(")
-                            .append("\"").append(fieldDeclaredClassName).append("\"").append(",")
+                        sb.append("java.lang.Object instance;")
+                            .append("if ($0 instanceof ").append(patchClass.getName()).append(") {")
+                            .append("instance = ((").append(patchClass.getName())
+                            .append(")$0).mHost;}")
+                            .append("else {instance = $0;}")
+                            .append("com.imuguys.hotfix.common.GuysReflectUtils.setFieldValue(")
+                            .append(fieldRealDeclaredClassName).append(".class")
+                            .append(",")
                             .append("\"").append(f.getFieldName()).append("\"").append(",")
-                            .append(fieldOwner).append(",")
-                            .append("$1")
-                            .append(");");
+                            .append("instance").append(",$1").append(");");
                         sb.append("}");
-                        System.out.println("f: " + sb.toString());
+                        System.out.println(sb.toString());
                         f.replace(sb.toString());
                       }
                     } catch (NotFoundException e) {
@@ -223,7 +224,7 @@ public class GuysPatchMakerGenerator {
     patchConfigPrintWriter
         .println(srcClassName + HotFixConfig.CONFIG_FILE_SPLIT + srcClassName
             + HotFixConfig.PATCH_CLASS_SUFFIX + HotFixConfig.CONFIG_FILE_SPLIT
-            + patchControllerCtClass.getName()
+            + srcClassName
             + HotFixConfig.PATCH_CONTROLLER_CLASS_SUFFIX);
   }
 
@@ -255,10 +256,10 @@ public class GuysPatchMakerGenerator {
             "Object hostPatch = $6.getClass().getDeclaredField(\"mGuysHotFixPatch\").get($6);")
         .append("if (hostPatch == null) { hostPatch = ").append("new ").append(patchClass.getName())
         .append("($6);")
-        .append("$5.getClass().getDeclaredField(\"mGuysHotFixPatch\").set($6,hostPatch);")
+        .append("$6.getClass().getDeclaredField(\"mGuysHotFixPatch\").set($6,hostPatch);")
         .append("}")
         .append(
-            "return ($r)hostPatch.getClass().getDeclaredMethod($1, $3).invoke($6, $2);")
+            "return ($r)hostPatch.getClass().getDeclaredMethod($1, $3).invoke(hostPatch, $2);")
         .append("}catch (Exception e) {e.printStackTrace();} return null;}");
     System.out.println(sb.toString());
     invokePatchMethod.setBody(sb.toString());
@@ -284,6 +285,12 @@ public class GuysPatchMakerGenerator {
         e.printStackTrace();
       }
     });
+    try {
+      patchClass
+          .setSuperclass(mGuysPatchMakerGeneratorConfig.getClassPool().get("java.lang.Object"));
+    } catch (CannotCompileException | NotFoundException e) {
+      e.printStackTrace();
+    }
   }
 
   @NotNull
