@@ -5,11 +5,9 @@ import java.util.function.Predicate;
 import org.gradle.api.Project;
 
 import com.android.build.gradle.AppExtension;
-import com.imuguys.hotfix.common.HotFixConfig;
-import com.imuguys.hotfix.common.IGuysHotFixPatch;
+import com.imuguys.hotfix.common.IGuysHotFixPatchController;
 
 import javassist.ClassPool;
-import javassist.CtClass;
 import javassist.NotFoundException;
 
 // 插桩上下文
@@ -21,7 +19,7 @@ public class GuysStubMakerContext {
   // 不对lambda插桩
   private boolean mExcludeLambda;
   // 补丁CtClassName
-  public static final String mIPatchClassName = IGuysHotFixPatch.class.getName();
+  public static final String mIPatchControllerClassName = IGuysHotFixPatchController.class.getName();
 
   public void addAndroidJarToClassPool() {
     mProject.getExtensions().getByType(AppExtension.class).getBootClasspath().forEach(file -> {

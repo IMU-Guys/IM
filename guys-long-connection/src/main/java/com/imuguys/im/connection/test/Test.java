@@ -23,7 +23,12 @@ public class Test extends Parent implements ITest {
     super.getTestString();
     mCount++;
     System.out.println(mCount);
-    mPoint = new Point();
+    System.out.println(mParentString);
+    mParentString = "child";
+    Point tmpPoint = new Point(1,2);
+    mParentPoint = new Point(tmpPoint);
+    tmpPoint.x = 3;
+    mPoint = new Point(tmpPoint);
     System.out.println(mPoint.toString());
     String testString = randomString();
     Log.i(TAG, testString);

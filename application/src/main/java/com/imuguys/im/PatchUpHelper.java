@@ -50,10 +50,11 @@ public class PatchUpHelper {
         String[] classNameArray = line.split(HotFixConfig.CONFIG_FILE_SPLIT);
         Class<?> bugClass =
             Thread.currentThread().getContextClassLoader().loadClass(classNameArray[0]);
-        Class<?> patchClass = patchClassLoader.loadClass(classNameArray[1]);
-        Field sGuysHotFixPatch = bugClass.getDeclaredField(HotFixConfig.PATCH_FIELD_NAME);
+        Class<?> patchClassControllerClass = patchClassLoader.loadClass(classNameArray[1]);
+        patchClassLoader.loadClass(classNameArray[2]);
+        Field sGuysHotFixPatch = bugClass.getDeclaredField(HotFixConfig.PATCH_CONTROLLER_FIELD_NAME);
         sGuysHotFixPatch.setAccessible(true);
-        sGuysHotFixPatch.set(null, patchClass.newInstance());
+        sGuysHotFixPatch.set(null, patchClassControllerClass.newInstance());
       }
       Log.i(TAG, "patch ok");
     } catch (IOException | ClassNotFoundException | NoSuchFieldException | IllegalAccessException

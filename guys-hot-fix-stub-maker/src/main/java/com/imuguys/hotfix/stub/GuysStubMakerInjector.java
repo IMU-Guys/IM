@@ -89,11 +89,17 @@ public class GuysStubMakerInjector {
         }
         CtMethod errorMethod = null;
         try {
-          CtField patchFiled = new CtField(
-              mGuysStubMakerContext.getClassPool().get(GuysStubMakerContext.mIPatchClassName),
-              HotFixConfig.PATCH_FIELD_NAME, targetClass);
-          patchFiled.setModifiers(Modifier.PRIVATE | Modifier.STATIC);
-          targetClass.addField(patchFiled);
+          CtField patchControllerFiled = new CtField(
+              mGuysStubMakerContext.getClassPool()
+                  .get(GuysStubMakerContext.mIPatchControllerClassName),
+              HotFixConfig.PATCH_CONTROLLER_FIELD_NAME, targetClass);
+          patchControllerFiled.setModifiers(Modifier.PRIVATE | Modifier.STATIC);
+          targetClass.addField(patchControllerFiled);
+          CtField patchField =
+              new CtField(mGuysStubMakerContext.getClassPool().get("java.lang.Object"),
+                  HotFixConfig.PATCH_FIELD_NAME, targetClass);
+          patchField.setModifiers(Modifier.PUBLIC);
+          targetClass.addField(patchField);
           for (CtMethod method : targetClass.getDeclaredMethods()) {
             errorMethod = method;
             // 抽象方法，native方法跳过
@@ -168,22 +174,32 @@ public class GuysStubMakerInjector {
   private String createPatchInvokeString(CtMethod method)
       throws NotFoundException {
     StringBuilder sb = new StringBuilder();
-    sb.append("if (").append(HotFixConfig.PATCH_FIELD_NAME).append(" != null) {");
+    sb.append("if (").append(HotFixConfig.PATCH_CONTROLLER_FIELD_NAME).append(" != null) {");
     if (!method.getReturnType().getName().equals("void")) {
       sb.append("return ")
           .append("($r)");
     }
+    String isStaticString;
+    String instance;
+    if ((method.getModifiers() & Modifier.STATIC) > 0) {
+      isStaticString = "true";
+      instance = "null";
+    } else {
+      isStaticString = "false";
+      instance = "$0";
+    }
     String paramsTypeString = generateParamsTypeString(method);
-    sb.append(HotFixConfig.PATCH_FIELD_NAME)
+    sb.append(HotFixConfig.PATCH_CONTROLLER_FIELD_NAME)
         .append(".invokePatch(")
         .append("\"")
         .append(method.getName())
-        .append("\"").append(", $args,").append(paramsTypeString).append(",");
-    if ((method.getModifiers() & Modifier.STATIC) > 0) {
-      sb.append("null);");
-    } else {
-      sb.append("$0);");
-    }
+        .append("\"").append(", $args,")
+        .append(paramsTypeString).append(",")
+        .append(isStaticString).append(",")
+        .append("$type").append(",")
+        .append(instance)
+        .append(");");
+
     if (method.getReturnType().getName().equals("void")) {
       sb.append("return;}");
     } else {

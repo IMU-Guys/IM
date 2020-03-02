@@ -12,6 +12,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.function.Consumer;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.JarOutputStream;
@@ -23,6 +26,7 @@ import javassist.CtConstructor;
 import javassist.CtField;
 import javassist.CtMethod;
 import javassist.CtNewConstructor;
+import javassist.Modifier;
 import javassist.NotFoundException;
 import javassist.expr.Cast;
 import javassist.expr.ExprEditor;
@@ -72,26 +76,14 @@ public class GuysPatchMakerGenerator {
             CtClass patchClass =
                 mGuysPatchMakerGeneratorConfig.getClassPool()
                     .makeClass(srcClassName + HotFixConfig.PATCH_CLASS_SUFFIX);
-            CtField hostField =
-                new CtField(mGuysPatchMakerGeneratorConfig.getClassPool().get(srcClassName),
-                    "mHost", patchClass);
-            patchClass.addField(hostField);
-            StringBuilder patchConstructStringBuilder = new StringBuilder();
-            patchConstructStringBuilder.append(" public Patch(Object o) {").append("mHost=(")
-                .append(srcClassName).append(")o;")
-                .append("}");
-            CtConstructor patchConstructor =
-                CtNewConstructor.make(patchConstructStringBuilder.toString(),
-                    patchClass);
-            patchClass.addConstructor(patchConstructor);
-            for (CtMethod srcMethod : srcClass.getDeclaredMethods()) {
-              if (!srcMethod
-                  .hasAnnotation(
-                      mGuysPatchMakerGeneratorConfig.getPatchMethodAnnotationClassName())) {
-                CtMethod methodInPatch = new CtMethod(srcMethod, patchClass, null);
-                patchClass.addMethod(methodInPatch);
-              }
-            }
+            Set<CtMethod> mHostMethodSet = new HashSet<>();
+            Set<CtField> mHostFieldSet = new HashSet<>();
+            // 复制类，防止在处理语句时发生的找不到类异常
+            cloneCtClass(srcClass, patchClass, mHostMethodSet, mHostFieldSet);
+            // 添加宿主成员变量
+            addHostField(srcClass, patchClass);
+            // 用于注入宿主
+            addPatchConstructor(srcClassName, patchClass);
             for (CtMethod srcMethod : srcClass.getDeclaredMethods()) {
               if (srcMethod
                   .hasAnnotation(
@@ -103,33 +95,58 @@ public class GuysPatchMakerGenerator {
                   @Override
                   public void edit(FieldAccess f) throws CannotCompileException {
                     super.edit(f);
-                    if (f.isReader()) {
-                      StringBuilder sb = new StringBuilder("{");
-                      sb.append("$_ = (").append("$r").append(")")
-                          .append("com.imuguys.hotfix.common.GuysReflectUtils.getFieldValue(")
-                          .append("\"").append(srcClassName).append("\"").append(",")
-                          .append("\"").append(f.getFieldName()).append("\"").append(",")
-                          .append("mHost").append(");");
-                      sb.append("}");
-                      System.out.println(sb.toString());
-                      f.replace(sb.toString());
-                    } else {
-                      StringBuilder sb = new StringBuilder("{");
-                      sb.append("com.imuguys.hotfix.common.GuysReflectUtils.setFieldValue(")
-                          .append("\"").append(srcClassName).append("\"").append(",")
-                          .append("\"").append(f.getFieldName()).append("\"").append(",")
-                          .append("mHost").append(",")
-                          .append("$1")
-                          .append(");");
-                      sb.append("}");
-                      System.out.println(sb.toString());
-                      f.replace(sb.toString());
+                    try {
+                      System.out.println(f.getField().getDeclaringClass().getName());
+                      String fieldDeclaredClassName; // 属性所在的类名称
+                      String fieldOwner; // 执行反射的对象的名称
+                      if (f.getField().getDeclaringClass().getName().equals(patchClass.getName())) {
+                        fieldDeclaredClassName = srcClass.getName();
+                        fieldOwner = "mHost";
+                      } else if (patchClass.subclassOf(f.getField().getDeclaringClass())) {
+                        fieldDeclaredClassName = f.getField().getDeclaringClass().getName();
+                        fieldOwner = "mHost";
+                      } else {
+                        fieldDeclaredClassName = f.getField().getDeclaringClass().getName();
+                        fieldOwner = "$0";
+                      }
+                      if (f.isReader()) {
+                        StringBuilder sb = new StringBuilder("{");
+                        sb.append("$_ = (").append("$r").append(")")
+                            .append("com.imuguys.hotfix.common.GuysReflectUtils.getFieldValue(")
+                            .append("\"").append(fieldDeclaredClassName).append("\"").append(",")
+                            .append("\"").append(f.getFieldName()).append("\"").append(",")
+                            .append(fieldOwner).append(");");
+                        sb.append("}");
+                        System.out.println("f: " + sb.toString());
+                        f.replace(sb.toString());
+                      } else {
+                        StringBuilder sb = new StringBuilder("{");
+                        sb.append("com.imuguys.hotfix.common.GuysReflectUtils.setFieldValue(")
+                            .append("\"").append(fieldDeclaredClassName).append("\"").append(",")
+                            .append("\"").append(f.getFieldName()).append("\"").append(",")
+                            .append(fieldOwner).append(",")
+                            .append("$1")
+                            .append(");");
+                        sb.append("}");
+                        System.out.println("f: " + sb.toString());
+                        f.replace(sb.toString());
+                      }
+                    } catch (NotFoundException e) {
+                      e.printStackTrace();
                     }
                   }
 
                   @Override
                   public void edit(NewExpr e) throws CannotCompileException {
                     super.edit(e);
+                    System.out.println("e: " + e.getClassName());
+                    StringBuilder sb = new StringBuilder("{");
+                    sb.append("$_ = (").append("$r").append(")")
+                        .append("com.imuguys.hotfix.common.GuysReflectUtils.invokeConstructor(")
+                        .append("\"").append(e.getClassName()).append("\"").append(",")
+                        .append("$sig").append(",")
+                        .append("$args").append(");}");
+                    e.replace(sb.toString());
                   }
 
                   @Override
@@ -142,34 +159,30 @@ public class GuysPatchMakerGenerator {
                   public void edit(MethodCall m) throws CannotCompileException {
                     super.edit(m);
                     try {
-                      if (false) {
-
+                      System.out.println(m.getMethod().getDeclaringClass().getName());
+                      String methodDeclaredClassName; // 函数所在的类名称
+                      String methodOwner; // 执行反射的对象的名称
+                      if (m.getMethod().getDeclaringClass().getName()
+                          .equals(patchClass.getName())) {
+                        methodDeclaredClassName = srcClass.getName();
+                        methodOwner = "mHost";
                       } else {
-                        StringBuilder sb = new StringBuilder("{");
-                        sb.append("$_ = (").append("$r").append(")")
-                            .append("com.imuguys.hotfix.common.GuysReflectUtils.invokeMethod(")
-                            .append("\"");
-                        if (m.getMethod().getDeclaringClass().getName()
-                            .equals(patchClass.getName())) {
-                          sb.append(hostField.getType().getName());
-                        } else {
-                          sb.append(m.getMethod().getDeclaringClass().getName());
-                        }
-                        sb.append("\"").append(",")
-                            .append("\"").append(m.getMethodName()).append("\"").append(",")
-                            .append("$sig").append(",")
-                            .append("$args").append(",");
-                        if (m.getMethod().getDeclaringClass().getName()
-                            .equals(patchClass.getName())) {
-                          sb.append("mHost").append(");");
-                        } else {
-                          sb.append("$0").append(");");
-                        }
-
-                        sb.append("}");
-                        System.out.println(sb.toString());
-                        m.replace(sb.toString());
+                        methodDeclaredClassName = m.getMethod().getDeclaringClass().getName();
+                        methodOwner = "$0";
                       }
+                      StringBuilder sb = new StringBuilder("{");
+                      sb.append("$_ = (").append("$r").append(")")
+                          .append("com.imuguys.hotfix.common.GuysReflectUtils.invokeMethod(")
+                          .append("\"")
+                          .append(methodDeclaredClassName)
+                          .append("\"").append(",")
+                          .append("\"").append(m.getMethodName()).append("\"").append(",")
+                          .append("$sig").append(",")
+                          .append("$args").append(",")
+                          .append(methodOwner).append(");");
+                      sb.append("}");
+                      System.out.println("m: " + sb.toString());
+                      m.replace(sb.toString());
                     } catch (NotFoundException e) {
                       e.printStackTrace();
                     }
@@ -179,12 +192,17 @@ public class GuysPatchMakerGenerator {
                 patchClass.addMethod(methodInPatch);
               }
             }
+
+            // 删除从宿主中复制到补丁中的方法和属性
+            clearCtClass(patchClass, mHostMethodSet, mHostFieldSet);
+
+            CtClass patchControllerCtClass = createPatchControllerCtClass(srcClass, patchClass);
             System.out.println("write :" + patchClass.getName());
-            patchClass.writeFile();
-            writeClassToPatchJar(patchClass, patchJarOutputStream, jarEntry.getName());
-            patchConfigPrintWriter
-                .println(srcClassName + HotFixConfig.CONFIG_FILE_SPLIT + srcClassName
-                    + HotFixConfig.PATCH_CLASS_SUFFIX);
+            // 测试用Class文件
+            writeTestClassFile(patchClass, patchControllerCtClass);
+            // 补丁文件
+            writePatchClassAndConfig(patchJarOutputStream, patchConfigPrintWriter, jarEntry,
+                srcClassName, patchClass, patchControllerCtClass);
           }
         }
       } catch (NotFoundException | CannotCompileException | IOException e) {
@@ -194,12 +212,127 @@ public class GuysPatchMakerGenerator {
     }
   }
 
+  private void writePatchClassAndConfig(JarOutputStream patchJarOutputStream,
+      PrintWriter patchConfigPrintWriter, JarEntry jarEntry, String srcClassName,
+      CtClass patchClass, CtClass patchControllerCtClass) {
+    writeClassToPatchJar(patchClass, patchJarOutputStream, jarEntry.getName(),
+        HotFixConfig.PATCH_CLASS_SUFFIX);
+    writeClassToPatchJar(patchControllerCtClass, patchJarOutputStream, jarEntry.getName(),
+        HotFixConfig.PATCH_CONTROLLER_CLASS_SUFFIX);
+
+    patchConfigPrintWriter
+        .println(srcClassName + HotFixConfig.CONFIG_FILE_SPLIT + srcClassName
+            + HotFixConfig.PATCH_CLASS_SUFFIX + HotFixConfig.CONFIG_FILE_SPLIT
+            + patchControllerCtClass.getName()
+            + HotFixConfig.PATCH_CONTROLLER_CLASS_SUFFIX);
+  }
+
+  private void writeTestClassFile(CtClass patchClass, CtClass patchControllerCtClass)
+      throws NotFoundException, IOException, CannotCompileException {
+    patchClass.writeFile();
+    patchControllerCtClass.writeFile();
+  }
+
+  private CtClass createPatchControllerCtClass(CtClass srcClass, CtClass patchClass)
+      throws NotFoundException, CannotCompileException, IOException {
+    CtClass patchControllerCtClass = mGuysPatchMakerGeneratorConfig.getClassPool()
+        .makeClass(srcClass.getName() + HotFixConfig.PATCH_CONTROLLER_CLASS_SUFFIX);
+    CtClass interfaceCtClass = mGuysPatchMakerGeneratorConfig.getClassPool()
+        .get(mGuysPatchMakerGeneratorConfig.getPatchControllerClassName());
+    patchControllerCtClass.addInterface(interfaceCtClass);
+    for (CtMethod m : interfaceCtClass.getDeclaredMethods()) {
+      CtMethod methodInPatchController = new CtMethod(m, patchControllerCtClass, null);
+      patchControllerCtClass.addMethod(methodInPatchController);
+    }
+    CtMethod invokePatchMethod = patchControllerCtClass.getDeclaredMethod("invokePatch");
+    StringBuilder sb = new StringBuilder();
+    sb.append("{try {")
+        .append("if ($4) {")
+        .append("return ($r)").append(patchClass.getName())
+        .append(
+            ".class.getDeclaredMethod($1, $3).invoke(null, $2);}")
+        .append(
+            "Object hostPatch = $6.getClass().getDeclaredField(\"mGuysHotFixPatch\").get($6);")
+        .append("if (hostPatch == null) { hostPatch = ").append("new ").append(patchClass.getName())
+        .append("($6);")
+        .append("$5.getClass().getDeclaredField(\"mGuysHotFixPatch\").set($6,hostPatch);")
+        .append("}")
+        .append(
+            "return ($r)hostPatch.getClass().getDeclaredMethod($1, $3).invoke($6, $2);")
+        .append("}catch (Exception e) {e.printStackTrace();} return null;}");
+    System.out.println(sb.toString());
+    invokePatchMethod.setBody(sb.toString());
+    invokePatchMethod.setModifiers(invokePatchMethod.getModifiers() & ~Modifier.ABSTRACT);
+    patchControllerCtClass.setModifiers(patchControllerCtClass.getModifiers() & ~Modifier.ABSTRACT);
+    return patchControllerCtClass;
+  }
+
+  private void clearCtClass(CtClass patchClass, Set<CtMethod> mHostMethodSet,
+      Set<CtField> mHostFieldSet) {
+    mHostFieldSet.forEach(ctField -> {
+      try {
+        patchClass.removeField(ctField);
+      } catch (NotFoundException e) {
+        e.printStackTrace();
+      }
+    });
+
+    mHostMethodSet.forEach(method -> {
+      try {
+        patchClass.removeMethod(method);
+      } catch (NotFoundException e) {
+        e.printStackTrace();
+      }
+    });
+  }
+
+  @NotNull
+  private void addHostField(CtClass srcClass, CtClass patchClass)
+      throws CannotCompileException, NotFoundException {
+    CtField hostField =
+        new CtField(mGuysPatchMakerGeneratorConfig.getClassPool().get(srcClass.getName()),
+            "mHost", patchClass);
+    patchClass.addField(hostField);
+  }
+
+  private void addPatchConstructor(String srcClassName, CtClass patchClass)
+      throws CannotCompileException {
+    StringBuilder patchConstructStringBuilder = new StringBuilder();
+    patchConstructStringBuilder.append(" public Patch(Object o) {").append("mHost=(")
+        .append(srcClassName).append(")o;")
+        .append("}");
+    CtConstructor patchConstructor =
+        CtNewConstructor.make(patchConstructStringBuilder.toString(),
+            patchClass);
+    patchClass.addConstructor(patchConstructor);
+  }
+
+  private void cloneCtClass(CtClass srcClass, CtClass patchClass, Set<CtMethod> methods,
+      Set<CtField> fields)
+      throws CannotCompileException, NotFoundException {
+    patchClass.setSuperclass(srcClass.getSuperclass());
+    for (CtMethod srcMethod : srcClass.getDeclaredMethods()) {
+      if (!srcMethod
+          .hasAnnotation(
+              mGuysPatchMakerGeneratorConfig.getPatchMethodAnnotationClassName())) {
+        CtMethod methodInPatch = new CtMethod(srcMethod, patchClass, null);
+        patchClass.addMethod(methodInPatch);
+        methods.add(methodInPatch);
+      }
+    }
+    for (CtField srcField : srcClass.getDeclaredFields()) {
+      CtField fieldInPatch = new CtField(srcField, patchClass);
+      patchClass.addField(fieldInPatch);
+      fields.add(fieldInPatch);
+    }
+  }
+
   private void writeClassToPatchJar(CtClass patchClass, JarOutputStream patchJarOutputStream,
-      String sourceJarEntryName) {
+      String sourceJarEntryName, String suffix) {
     try {
       String targetJarEntryName =
           sourceJarEntryName.substring(0, sourceJarEntryName.lastIndexOf("."))
-              + HotFixConfig.PATCH_CLASS_SUFFIX + ".class";
+              + suffix + ".class";
       patchJarOutputStream.putNextEntry(new ZipEntry(targetJarEntryName));
       patchJarOutputStream.write(patchClass.toBytecode());
       patchJarOutputStream.closeEntry();
