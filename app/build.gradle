@@ -7,9 +7,9 @@ apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-kapt'
 
 // 插桩插件
-//apply plugin: 'imuguys-hotfix-stub'
+apply plugin: 'imuguys-hotfix-stub'
 // 补丁插件
-apply plugin: 'imuguys-hotfix-patch'
+//apply plugin: 'imuguys-hotfix-patch'
 
 buildscript {
     repositories {

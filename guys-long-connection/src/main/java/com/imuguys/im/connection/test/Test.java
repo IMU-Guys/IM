@@ -38,7 +38,7 @@ public class Test extends Parent implements ITest {
   @Override
   public String getTestString() {
     mCount++;
-    mParentString = "child";
+    mParentString = "hahaha";
     Point tmpPoint = new Point(1,2);
     mParentPoint = new Point(tmpPoint);
     tmpPoint.x = 3;
@@ -46,7 +46,8 @@ public class Test extends Parent implements ITest {
     staticMethod(mPoint);
     method(mPoint);
     System.out.println(this);
-    addTest();
+//    randomString();
+//    addTest();
     return mParentString;
   }
 

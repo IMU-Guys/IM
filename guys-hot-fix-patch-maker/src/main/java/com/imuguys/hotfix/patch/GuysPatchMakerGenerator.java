@@ -188,9 +188,8 @@ public class GuysPatchMakerGenerator {
                         if ((srcMethod.getModifiers() & Modifier.STATIC) > 0) { // 在静态方法中
                           sb.append("$_ = (").append("$r").append(")")
                               .append("com.imuguys.hotfix.common.GuysReflectUtils.invokeMethod(")
-                              .append("\"")
-                              .append(methodDeclaredClassName)
-                              .append("\"").append(",")
+                              .append(methodDeclaredClassName).append(".class")
+                              .append(",")
                               .append("\"").append(m.getMethodName()).append("\"").append(",")
                               .append("$sig").append(",")
                               .append("$args").append(",")
@@ -198,9 +197,8 @@ public class GuysPatchMakerGenerator {
                         } else {
                           sb.append("$_ = (").append("$r").append(")")
                               .append("com.imuguys.hotfix.common.GuysReflectUtils.invokeMethod(")
-                              .append("\"")
-                              .append(methodDeclaredClassName)
-                              .append("\"").append(",")
+                              .append(methodDeclaredClassName).append(".class")
+                              .append(",")
                               .append("\"").append(m.getMethodName()).append("\"").append(",")
                               .append("$sig").append(",")
                               .append("getRealParameter($args)").append(",")
@@ -210,29 +208,38 @@ public class GuysPatchMakerGenerator {
                         if ((srcMethod.getModifiers() & Modifier.STATIC) > 0) { // 在静态方法中
                           sb.append("$_ = (").append("$r").append(")")
                               .append("com.imuguys.hotfix.common.GuysReflectUtils.invokeMethod(")
-                              .append("\"")
-                              .append(methodDeclaredClassName)
-                              .append("\"").append(",")
+                              .append(methodDeclaredClassName).append(".class")
+                              .append(",")
                               .append("\"").append(m.getMethodName()).append("\"").append(",")
                               .append("$sig").append(",")
                               .append("$args").append(",")
                               .append("$0").append(");");
                         } else {
-                          sb.append("java.lang.Object instance;")
-                              .append("if ($0 instanceof ").append(patchClass.getName())
-                              .append(") {")
-                              .append("instance = ((").append(patchClass.getName())
-                              .append(")$0).mHost;}")
-                              .append("else {instance = $0;}")
-                              .append("$_ = (").append("$r").append(")")
-                              .append("com.imuguys.hotfix.common.GuysReflectUtils.invokeMethod(")
-                              .append("\"")
-                              .append(methodDeclaredClassName)
-                              .append("\"").append(",")
-                              .append("\"").append(m.getMethodName()).append("\"").append(",")
-                              .append("$sig").append(",")
-                              .append("getRealParameter($args)").append(",")
-                              .append("instance").append(");");
+                          if (addMethodLongNameSet.contains(m.getMethod().getLongName())) {
+                            sb.append("$_ = (").append("$r").append(")")
+                                .append("com.imuguys.hotfix.common.GuysReflectUtils.invokeMethod(")
+                                .append(methodDeclaredClassName).append(".class")
+                                .append(",")
+                                .append("\"").append(m.getMethodName()).append("\"").append(",")
+                                .append("$sig").append(",")
+                                .append("getRealParameter($args)").append(",")
+                                .append("$0").append(");");
+                          } else {
+                            sb.append("java.lang.Object instance;")
+                                .append("if ($0 instanceof ").append(patchClass.getName())
+                                .append(") {")
+                                .append("instance = ((").append(patchClass.getName())
+                                .append(")$0).mHost;}")
+                                .append("else {instance = $0;}")
+                                .append("$_ = (").append("$r").append(")")
+                                .append("com.imuguys.hotfix.common.GuysReflectUtils.invokeMethod(")
+                                .append(methodDeclaredClassName).append(".class")
+                                .append(",")
+                                .append("\"").append(m.getMethodName()).append("\"").append(",")
+                                .append("$sig").append(",")
+                                .append("getRealParameter($args)").append(",")
+                                .append("instance").append(");");
+                          }
                         }
                       }
                       sb.append("}");
