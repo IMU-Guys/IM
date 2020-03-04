@@ -1,5 +1,6 @@
 package com.imuguys.hotfix.patch;
 
+import com.imuguys.hotfix.common.AddMethod;
 import com.imuguys.hotfix.common.IGuysHotFixPatchController;
 import com.imuguys.hotfix.common.ModifyClass;
 import com.imuguys.hotfix.common.ModifyMethod;
@@ -11,6 +12,7 @@ public class GuysPatchMakerGeneratorConfig {
   private ClassPool mClassPool = ClassPool.getDefault();
   private String mPatchClassAnnotationClassName = ModifyClass.class.getName();
   private String mPatchMethodAnnotationClassName = ModifyMethod.class.getName();
+  private String mPatchAddMethodAnnotationClassName = AddMethod.class.getName();
   private String mPatchControllerClassName = IGuysHotFixPatchController.class.getName();
 
   public ClassPool getClassPool() {
@@ -23,6 +25,10 @@ public class GuysPatchMakerGeneratorConfig {
 
   public String getPatchMethodAnnotationClassName() {
     return mPatchMethodAnnotationClassName;
+  }
+
+  public String getPatchAddMethodAnnotationClassName() {
+    return mPatchAddMethodAnnotationClassName;
   }
 
   public String getPatchControllerClassName() {

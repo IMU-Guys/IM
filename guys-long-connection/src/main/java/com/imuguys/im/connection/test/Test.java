@@ -2,6 +2,7 @@ package com.imuguys.im.connection.test;
 
 import android.graphics.Point;
 
+import com.imuguys.hotfix.common.AddMethod;
 import com.imuguys.hotfix.common.ModifyClass;
 import com.imuguys.hotfix.common.ModifyMethod;
 
@@ -45,7 +46,13 @@ public class Test extends Parent implements ITest {
     staticMethod(mPoint);
     method(mPoint);
     System.out.println(this);
+    addTest();
     return mParentString;
+  }
+
+  @AddMethod
+  public void addTest() {
+    System.out.println("add Test");
   }
 
   @Override

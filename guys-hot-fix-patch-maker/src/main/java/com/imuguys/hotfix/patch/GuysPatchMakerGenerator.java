@@ -3,6 +3,7 @@ package com.imuguys.hotfix.patch;
 import com.android.build.api.transform.Format;
 import com.android.build.api.transform.JarInput;
 import com.android.build.api.transform.TransformOutputProvider;
+import com.google.common.collect.Lists;
 import com.imuguys.hotfix.common.HotFixConfig;
 
 import org.apache.commons.io.FileUtils;
@@ -11,10 +12,12 @@ import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.JarOutputStream;
@@ -76,10 +79,14 @@ public class GuysPatchMakerGenerator {
             CtClass patchClass =
                 mGuysPatchMakerGeneratorConfig.getClassPool()
                     .makeClass(srcClassName + HotFixConfig.PATCH_CLASS_SUFFIX);
-            Set<CtMethod> mHostMethodSet = new HashSet<>();
-            Set<CtField> mHostFieldSet = new HashSet<>();
+            Set<CtMethod> hostMethodSet = new HashSet<>();
+            Set<CtField> hostFieldSet = new HashSet<>();
+            Set<String> addMethodLongNameSet = new HashSet<>();
+            Map<CtMethod,CtMethod> addMethodMap = new HashMap<>();
             // 复制类，防止在处理语句时发生的找不到类异常
-            cloneCtClass(srcClass, patchClass, mHostMethodSet, mHostFieldSet);
+            cloneCtClass(srcClass, patchClass, hostMethodSet, hostFieldSet, addMethodLongNameSet, addMethodMap);
+            System.out.println("add method:");
+            addMethodLongNameSet.forEach(System.out::println);
             // 添加宿主成员变量
             addHostField(srcClass, patchClass);
             // 用于注入宿主
@@ -87,11 +94,16 @@ public class GuysPatchMakerGenerator {
             // 添加获取真正参数的方法
             addGetRealParamsMethod(patchClass);
             for (CtMethod srcMethod : srcClass.getDeclaredMethods()) {
-              if (srcMethod
-                  .hasAnnotation(
-                      mGuysPatchMakerGeneratorConfig.getPatchMethodAnnotationClassName())) {
+              if (isModifiedMethod(srcMethod) || isAddedMethod(srcMethod)) {
                 System.out.println("srcMethod : " + srcMethod.getName());
-                CtMethod methodInPatch = new CtMethod(srcMethod, patchClass, null);
+                CtMethod methodInPatch;
+                if (isModifiedMethod(srcMethod)) {
+                  // modify method
+                  methodInPatch = new CtMethod(srcMethod, patchClass, null);
+                } else {
+                  // add method
+                  methodInPatch = addMethodMap.get(srcMethod);
+                }
                 // todo 目前只是简单的语句可以注入，涉及到原有host的属性、参数都会有问题，后续处理
                 methodInPatch.instrument(new ExprEditor() {
                   @Override
@@ -165,7 +177,8 @@ public class GuysPatchMakerGenerator {
                       System.out.println(m.getMethod().getDeclaringClass().getName());
                       String methodDeclaredClassName; // 函数所在的类名称
                       if (m.getMethod().getDeclaringClass().getName()
-                              .equals(patchClass.getName())) {
+                          .equals(patchClass.getName())
+                          && !addMethodLongNameSet.contains(m.getMethod().getLongName())) {
                         methodDeclaredClassName = srcClass.getName();
                       } else {
                         methodDeclaredClassName = m.getMethod().getDeclaringClass().getName();
@@ -231,12 +244,14 @@ public class GuysPatchMakerGenerator {
                   }
                 });
                 System.out.println("xxx");
-                patchClass.addMethod(methodInPatch);
+                if (isModifiedMethod(srcMethod)) {
+                  patchClass.addMethod(methodInPatch);
+                }
               }
             }
 
             // 删除从宿主中复制到补丁中的方法和属性
-            clearCtClass(patchClass, mHostMethodSet, mHostFieldSet);
+            clearCtClass(patchClass, hostMethodSet, hostFieldSet, addMethodLongNameSet);
 
             CtClass patchControllerCtClass = createPatchControllerCtClass(srcClass, patchClass);
             System.out.println("write :" + patchClass.getName());
@@ -256,7 +271,7 @@ public class GuysPatchMakerGenerator {
 
   private void addGetRealParamsMethod(CtClass patchClass) {
     try {
-      CtMethod reaLParameterMethod = CtMethod.make(getRealParamtersBody(), patchClass);
+      CtMethod reaLParameterMethod = CtMethod.make(getRealParametersBody(), patchClass);
       patchClass.addMethod(reaLParameterMethod);
     } catch (CannotCompileException e) {
       e.printStackTrace();
@@ -320,7 +335,7 @@ public class GuysPatchMakerGenerator {
   }
 
   private void clearCtClass(CtClass patchClass, Set<CtMethod> mHostMethodSet,
-      Set<CtField> mHostFieldSet) {
+      Set<CtField> mHostFieldSet, Set<String> addMethodLongNameSet) {
     mHostFieldSet.forEach(ctField -> {
       try {
         patchClass.removeField(ctField);
@@ -329,13 +344,15 @@ public class GuysPatchMakerGenerator {
       }
     });
 
-    mHostMethodSet.forEach(method -> {
-      try {
-        patchClass.removeMethod(method);
-      } catch (NotFoundException e) {
-        e.printStackTrace();
-      }
-    });
+    mHostMethodSet.stream()
+        .filter(ctMethod -> !addMethodLongNameSet.contains(ctMethod.getLongName()))
+        .forEach(method -> {
+          try {
+            patchClass.removeMethod(method);
+          } catch (NotFoundException e) {
+            e.printStackTrace();
+          }
+        });
     try {
       patchClass
           .setSuperclass(mGuysPatchMakerGeneratorConfig.getClassPool().get("java.lang.Object"));
@@ -366,16 +383,18 @@ public class GuysPatchMakerGenerator {
   }
 
   private void cloneCtClass(CtClass srcClass, CtClass patchClass, Set<CtMethod> methods,
-      Set<CtField> fields)
+      Set<CtField> fields, Set<String> addMethodLongNameSet, Map<CtMethod,CtMethod> addMethodMap)
       throws CannotCompileException, NotFoundException {
     patchClass.setSuperclass(srcClass.getSuperclass());
     for (CtMethod srcMethod : srcClass.getDeclaredMethods()) {
-      if (!srcMethod
-          .hasAnnotation(
-              mGuysPatchMakerGeneratorConfig.getPatchMethodAnnotationClassName())) {
+      if (!isModifiedMethod(srcMethod)) {
         CtMethod methodInPatch = new CtMethod(srcMethod, patchClass, null);
         patchClass.addMethod(methodInPatch);
         methods.add(methodInPatch);
+        if (isAddedMethod(srcMethod)) {
+          addMethodLongNameSet.add(methodInPatch.getLongName());
+          addMethodMap.put(srcMethod,methodInPatch);
+        }
       }
     }
     for (CtField srcField : srcClass.getDeclaredFields()) {
@@ -387,7 +406,7 @@ public class GuysPatchMakerGenerator {
 
   // copy from Robust
   // 把属于Patch类的属性修改为Patch.mHost对象的属性
-  public static String getRealParamtersBody() {
+  public static String getRealParametersBody() {
     StringBuilder realParameterBuilder = new StringBuilder();
     realParameterBuilder.append("public  Object[] " + "getRealParameter" + " (Object[] args){");
     realParameterBuilder.append("if (args == null || args.length < 1) {");
@@ -460,6 +479,14 @@ public class GuysPatchMakerGenerator {
 
   private String convertClassFileNameToClassName(String classFileName) {
     return classFileName.substring(0, classFileName.lastIndexOf(".")).replaceAll("/", ".");
+  }
+  
+  private boolean isModifiedMethod(CtMethod method) {
+    return method.hasAnnotation(mGuysPatchMakerGeneratorConfig.getPatchMethodAnnotationClassName());
+  }
+  
+  private boolean isAddedMethod(CtMethod method) {
+    return method.hasAnnotation(mGuysPatchMakerGeneratorConfig.getPatchAddMethodAnnotationClassName());
   }
 
   @NotNull
