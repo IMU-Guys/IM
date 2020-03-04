@@ -33,18 +33,6 @@ public class GuysReflectUtils {
     return null;
   }
 
-  public static void setFieldValue(String className, String fieldName, Object host, Object value) {
-    try {
-      Field declaredField = Class.forName(className).getDeclaredField(fieldName);
-      if (!declaredField.isAccessible()) {
-        declaredField.setAccessible(true);
-      }
-      declaredField.set(host, value);
-    } catch (IllegalAccessException | NoSuchFieldException | ClassNotFoundException e) {
-      e.printStackTrace();
-    }
-  }
-
   public static void setFieldValue(Class clazz, String fieldName, Object host, Object value) {
     try {
       Field declaredField = clazz.getDeclaredField(fieldName);
@@ -57,25 +45,90 @@ public class GuysReflectUtils {
     }
   }
 
-  public static void setFieldValue(String className, String fieldName, Object host, int value) {
-    try {
-      Field declaredField = Class.forName(className).getDeclaredField(fieldName);
-      if (!declaredField.isAccessible()) {
-        declaredField.setAccessible(true);
-      }
-      declaredField.set(host, value);
-    } catch (IllegalAccessException | NoSuchFieldException | ClassNotFoundException e) {
-      e.printStackTrace();
-    }
-  }
-
   public static void setFieldValue(Class clazz, String fieldName, Object host, int value) {
     try {
       Field declaredField = clazz.getDeclaredField(fieldName);
       if (!declaredField.isAccessible()) {
         declaredField.setAccessible(true);
       }
-      declaredField.set(host, value);
+      declaredField.setInt(host, value);
+    } catch (IllegalAccessException | NoSuchFieldException  e) {
+      e.printStackTrace();
+    }
+  }
+  public static void setFieldValue(Class clazz, String fieldName, Object host, byte value) {
+    try {
+      Field declaredField = clazz.getDeclaredField(fieldName);
+      if (!declaredField.isAccessible()) {
+        declaredField.setAccessible(true);
+      }
+      declaredField.setByte(host, value);
+    } catch (IllegalAccessException | NoSuchFieldException  e) {
+      e.printStackTrace();
+    }
+  }
+  public static void setFieldValue(Class clazz, String fieldName, Object host, boolean value) {
+    try {
+      Field declaredField = clazz.getDeclaredField(fieldName);
+      if (!declaredField.isAccessible()) {
+        declaredField.setAccessible(true);
+      }
+      declaredField.setBoolean(host, value);
+    } catch (IllegalAccessException | NoSuchFieldException  e) {
+      e.printStackTrace();
+    }
+  }
+  public static void setFieldValue(Class clazz, String fieldName, Object host, char value) {
+    try {
+      Field declaredField = clazz.getDeclaredField(fieldName);
+      if (!declaredField.isAccessible()) {
+        declaredField.setAccessible(true);
+      }
+      declaredField.setChar(host, value);
+    } catch (IllegalAccessException | NoSuchFieldException  e) {
+      e.printStackTrace();
+    }
+  }
+  public static void setFieldValue(Class clazz, String fieldName, Object host, short value) {
+    try {
+      Field declaredField = clazz.getDeclaredField(fieldName);
+      if (!declaredField.isAccessible()) {
+        declaredField.setAccessible(true);
+      }
+      declaredField.setShort(host, value);
+    } catch (IllegalAccessException | NoSuchFieldException  e) {
+      e.printStackTrace();
+    }
+  }
+  public static void setFieldValue(Class clazz, String fieldName, Object host, long value) {
+    try {
+      Field declaredField = clazz.getDeclaredField(fieldName);
+      if (!declaredField.isAccessible()) {
+        declaredField.setAccessible(true);
+      }
+      declaredField.setLong(host, value);
+    } catch (IllegalAccessException | NoSuchFieldException  e) {
+      e.printStackTrace();
+    }
+  }
+  public static void setFieldValue(Class clazz, String fieldName, Object host, float value) {
+    try {
+      Field declaredField = clazz.getDeclaredField(fieldName);
+      if (!declaredField.isAccessible()) {
+        declaredField.setAccessible(true);
+      }
+      declaredField.setFloat(host, value);
+    } catch (IllegalAccessException | NoSuchFieldException  e) {
+      e.printStackTrace();
+    }
+  }
+  public static void setFieldValue(Class clazz, String fieldName, Object host, double value) {
+    try {
+      Field declaredField = clazz.getDeclaredField(fieldName);
+      if (!declaredField.isAccessible()) {
+        declaredField.setAccessible(true);
+      }
+      declaredField.setDouble(host, value);
     } catch (IllegalAccessException | NoSuchFieldException  e) {
       e.printStackTrace();
     }

@@ -84,6 +84,8 @@ public class GuysPatchMakerGenerator {
             addHostField(srcClass, patchClass);
             // 用于注入宿主
             addPatchConstructor(srcClassName, patchClass);
+            // 添加获取真正参数的方法
+            addGetRealParamsMethod(patchClass);
             for (CtMethod srcMethod : srcClass.getDeclaredMethods()) {
               if (srcMethod
                   .hasAnnotation(
@@ -162,25 +164,64 @@ public class GuysPatchMakerGenerator {
                     try {
                       System.out.println(m.getMethod().getDeclaringClass().getName());
                       String methodDeclaredClassName; // 函数所在的类名称
-                      String methodOwner; // 执行反射的对象的名称
                       if (m.getMethod().getDeclaringClass().getName()
-                          .equals(patchClass.getName())) {
+                              .equals(patchClass.getName())) {
                         methodDeclaredClassName = srcClass.getName();
-                        methodOwner = "mHost";
                       } else {
                         methodDeclaredClassName = m.getMethod().getDeclaringClass().getName();
-                        methodOwner = "$0";
                       }
                       StringBuilder sb = new StringBuilder("{");
-                      sb.append("$_ = (").append("$r").append(")")
-                          .append("com.imuguys.hotfix.common.GuysReflectUtils.invokeMethod(")
-                          .append("\"")
-                          .append(methodDeclaredClassName)
-                          .append("\"").append(",")
-                          .append("\"").append(m.getMethodName()).append("\"").append(",")
-                          .append("$sig").append(",")
-                          .append("$args").append(",")
-                          .append(methodOwner).append(");");
+                      if ((m.getMethod().getModifiers() & Modifier.STATIC) > 0) { // 静态方法
+                        if ((srcMethod.getModifiers() & Modifier.STATIC) > 0) { // 在静态方法中
+                          sb.append("$_ = (").append("$r").append(")")
+                              .append("com.imuguys.hotfix.common.GuysReflectUtils.invokeMethod(")
+                              .append("\"")
+                              .append(methodDeclaredClassName)
+                              .append("\"").append(",")
+                              .append("\"").append(m.getMethodName()).append("\"").append(",")
+                              .append("$sig").append(",")
+                              .append("$args").append(",")
+                              .append("null").append(");");
+                        } else {
+                          sb.append("$_ = (").append("$r").append(")")
+                              .append("com.imuguys.hotfix.common.GuysReflectUtils.invokeMethod(")
+                              .append("\"")
+                              .append(methodDeclaredClassName)
+                              .append("\"").append(",")
+                              .append("\"").append(m.getMethodName()).append("\"").append(",")
+                              .append("$sig").append(",")
+                              .append("getRealParameter($args)").append(",")
+                              .append("null").append(");");
+                        }
+                      } else {
+                        if ((srcMethod.getModifiers() & Modifier.STATIC) > 0) { // 在静态方法中
+                          sb.append("$_ = (").append("$r").append(")")
+                              .append("com.imuguys.hotfix.common.GuysReflectUtils.invokeMethod(")
+                              .append("\"")
+                              .append(methodDeclaredClassName)
+                              .append("\"").append(",")
+                              .append("\"").append(m.getMethodName()).append("\"").append(",")
+                              .append("$sig").append(",")
+                              .append("$args").append(",")
+                              .append("$0").append(");");
+                        } else {
+                          sb.append("java.lang.Object instance;")
+                              .append("if ($0 instanceof ").append(patchClass.getName())
+                              .append(") {")
+                              .append("instance = ((").append(patchClass.getName())
+                              .append(")$0).mHost;}")
+                              .append("else {instance = $0;}")
+                              .append("$_ = (").append("$r").append(")")
+                              .append("com.imuguys.hotfix.common.GuysReflectUtils.invokeMethod(")
+                              .append("\"")
+                              .append(methodDeclaredClassName)
+                              .append("\"").append(",")
+                              .append("\"").append(m.getMethodName()).append("\"").append(",")
+                              .append("$sig").append(",")
+                              .append("getRealParameter($args)").append(",")
+                              .append("instance").append(");");
+                        }
+                      }
                       sb.append("}");
                       System.out.println("m: " + sb.toString());
                       m.replace(sb.toString());
@@ -210,6 +251,16 @@ public class GuysPatchMakerGenerator {
         e.printStackTrace();
         throw new RuntimeException(e);
       }
+    }
+  }
+
+  private void addGetRealParamsMethod(CtClass patchClass) {
+    try {
+      CtMethod reaLParameterMethod = CtMethod.make(getRealParamtersBody(), patchClass);
+      patchClass.addMethod(reaLParameterMethod);
+    } catch (CannotCompileException e) {
+      e.printStackTrace();
+      throw new RuntimeException(e);
     }
   }
 
@@ -332,6 +383,32 @@ public class GuysPatchMakerGenerator {
       patchClass.addField(fieldInPatch);
       fields.add(fieldInPatch);
     }
+  }
+
+  // copy from Robust
+  // 把属于Patch类的属性修改为Patch.mHost对象的属性
+  public static String getRealParamtersBody() {
+    StringBuilder realParameterBuilder = new StringBuilder();
+    realParameterBuilder.append("public  Object[] " + "getRealParameter" + " (Object[] args){");
+    realParameterBuilder.append("if (args == null || args.length < 1) {");
+    realParameterBuilder.append(" return args;");
+    realParameterBuilder.append("}");
+    realParameterBuilder.append(" Object[] realParameter = new Object[args.length];");
+    realParameterBuilder.append("for (int i = 0; i < args.length; i++) {");
+    realParameterBuilder.append("if (args[i] instanceof Object[]) {");
+    realParameterBuilder
+        .append("realParameter[i] =" + "getRealParameter" + "((Object[]) args[i]);");
+    realParameterBuilder.append("} else {");
+    realParameterBuilder.append("if (args[i] ==this) {");
+    realParameterBuilder.append(" realParameter[i] =this." + "mHost" + ";");
+    realParameterBuilder.append("} else {");
+    realParameterBuilder.append(" realParameter[i] = args[i];");
+    realParameterBuilder.append(" }");
+    realParameterBuilder.append(" }");
+    realParameterBuilder.append(" }");
+    realParameterBuilder.append("  return realParameter;");
+    realParameterBuilder.append(" }");
+    return realParameterBuilder.toString();
   }
 
   private void writeClassToPatchJar(CtClass patchClass, JarOutputStream patchJarOutputStream,

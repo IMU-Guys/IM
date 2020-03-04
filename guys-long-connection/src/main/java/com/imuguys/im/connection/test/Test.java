@@ -17,21 +17,34 @@ public class Test extends Parent implements ITest {
   private int mCount = 0;
   private Point mPoint;
 
+  private static void staticMethod(Point point) {
+    System.out.println(point);
+  }
+
+  private void method(Point point) {
+    System.out.println(point);
+  }
+
+  @ModifyMethod
+  public static void staticBugMethod() {
+    Point point = new Point();
+    staticMethod(point);
+    String s = point.toString();
+    System.out.println(s);
+  }
+
   @ModifyMethod
   @Override
   public String getTestString() {
-//    super.getTestString();
     mCount++;
-//    System.out.println(mCount);
-//    System.out.println(mParentString);
     mParentString = "child";
     Point tmpPoint = new Point(1,2);
     mParentPoint = new Point(tmpPoint);
     tmpPoint.x = 3;
     mPoint = new Point(tmpPoint);
-//    System.out.println(mPoint.toString());
-//    String testString = randomString();
-//    Log.i(TAG, testString);
+    staticMethod(mPoint);
+    method(mPoint);
+    System.out.println(this);
     return mParentString;
   }
 
