@@ -314,6 +314,7 @@ public class GuysPatchMakerGenerator {
     CtClass interfaceCtClass = mGuysPatchMakerGeneratorConfig.getClassPool()
         .get(mGuysPatchMakerGeneratorConfig.getPatchControllerClassName());
     patchControllerCtClass.addInterface(interfaceCtClass);
+    addPatchControllerCtClassMap(srcClass, patchControllerCtClass);
     for (CtMethod m : interfaceCtClass.getDeclaredMethods()) {
       CtMethod methodInPatchController = new CtMethod(m, patchControllerCtClass, null);
       patchControllerCtClass.addMethod(methodInPatchController);
@@ -337,8 +338,45 @@ public class GuysPatchMakerGenerator {
     System.out.println(sb.toString());
     invokePatchMethod.setBody(sb.toString());
     invokePatchMethod.setModifiers(invokePatchMethod.getModifiers() & ~Modifier.ABSTRACT);
+
+    CtMethod invokePatchCheckedMethod =
+        patchControllerCtClass.getDeclaredMethod("needInvokePatchMethod");
+    invokePatchCheckedMethod.setBody("return mMethodNameSet.contains($1);");
+    invokePatchCheckedMethod
+        .setModifiers(invokePatchCheckedMethod.getModifiers() & ~Modifier.ABSTRACT);
+
     patchControllerCtClass.setModifiers(patchControllerCtClass.getModifiers() & ~Modifier.ABSTRACT);
     return patchControllerCtClass;
+  }
+
+  /**
+   * 给补丁控制类写入Set<String>,用来判断是否需要执行补丁方法。
+   * @param srcClass 原有的bug类
+   */
+  private void addPatchControllerCtClassMap(CtClass srcClass, CtClass patchControllerCtClass) {
+    // todo 抽取成变量
+    try {
+      CtField patchedMethodsNameSet =
+          new CtField(mGuysPatchMakerGeneratorConfig.getClassPool().get("java.util.Set"),
+              "mMethodNameSet", patchControllerCtClass);
+      patchedMethodsNameSet.setModifiers(Modifier.STATIC | Modifier.PRIVATE);
+      patchControllerCtClass.addField(patchedMethodsNameSet,"new java.util.HashSet()");
+
+      CtConstructor patchControllerCtClassStaticBlock =
+          patchControllerCtClass.makeClassInitializer();
+      StringBuilder sb = new StringBuilder("{");
+      for (CtMethod ctMethod : srcClass.getDeclaredMethods()) {
+        if (ctMethod
+            .hasAnnotation(mGuysPatchMakerGeneratorConfig.getPatchMethodAnnotationClassName())) {
+          sb.append("mMethodNameSet.add(\"").append(ctMethod.getLongName()).append("\");");
+        }
+      }
+      sb.append("}");
+      System.out.println(sb.toString());
+      patchControllerCtClassStaticBlock.setBody(sb.toString());
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private void clearCtClass(CtClass patchClass, Set<CtMethod> mHostMethodSet,

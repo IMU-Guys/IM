@@ -174,7 +174,10 @@ public class GuysStubMakerInjector {
   private String createPatchInvokeString(CtMethod method)
       throws NotFoundException {
     StringBuilder sb = new StringBuilder();
-    sb.append("if (").append(HotFixConfig.PATCH_CONTROLLER_FIELD_NAME).append(" != null) {");
+    sb.append("if (").append(HotFixConfig.PATCH_CONTROLLER_FIELD_NAME).append(" != null && ")
+        .append(HotFixConfig.PATCH_CONTROLLER_FIELD_NAME).append(".needInvokePatchMethod(\"")
+        .append(method.getLongName()).append("\"")
+        .append(")) {");
     if (!method.getReturnType().getName().equals("void")) {
       sb.append("return ")
           .append("($r)");

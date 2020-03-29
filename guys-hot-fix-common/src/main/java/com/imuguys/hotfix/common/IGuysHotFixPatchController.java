@@ -14,4 +14,9 @@ public interface IGuysHotFixPatchController {
       boolean isStatic,
       Class<?> returnType,
       Object host);
+
+  /**
+   * 是否需要调用补丁
+   */
+  boolean needInvokePatchMethod(String methodLongName);
 }
