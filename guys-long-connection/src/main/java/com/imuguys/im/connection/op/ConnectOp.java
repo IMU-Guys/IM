@@ -35,13 +35,12 @@ public class ConnectOp implements Runnable {
       // 连接建立成功，notified
       mLongConnectionContext.getOnConnectSuccessSubject().onNext(false);
       mLongConnectionContext.setConnectionClient(connectionClient);
-      mLongConnectionContext.registerMessageListenerToChannelHandler();
+      mLongConnectionContext.updateMessageListenerToChannelHandler();
     } catch (Exception e) {
       e.printStackTrace();
       Log.i(TAG, "connect failed!");
       connectionBootstrap.shutdown();
       mLongConnectionContext.getOnConnectFailedSubject().onNext(false);
     }
-
   }
 }

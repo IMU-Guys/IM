@@ -1,11 +1,11 @@
 package com.imuguys.im.connection;
 
-import androidx.annotation.Nullable;
-
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+
+import androidx.annotation.Nullable;
 
 import io.reactivex.disposables.Disposable;
 import io.reactivex.subjects.PublishSubject;
@@ -26,7 +26,7 @@ public class LongConnectionContext {
   // 还未建立连接时，无法建立连接
   private Subject<Boolean> mOnConnectFailedSubject = PublishSubject.create();
   // 已经建立连接，被服务端断开
-  private Subject<Boolean> mOnRemoteDisconnectSubject = PublishSubject.create();
+  private Subject<Boolean> mOnDisconnectByExceptionSubject = PublishSubject.create();
   // 连接建立成功
   private Subject<Boolean> mOnConnectSuccessSubject = PublishSubject.create();
   // 心跳超时
@@ -56,8 +56,25 @@ public class LongConnectionContext {
         }).addMessageListener(socketMessageListener);
   }
 
+  /**
+   * 移除消息监听器
+   * @param messageClassName 监听消息类名
+   * @param socketMessageListener 要消息监听器
+   */
   @SuppressWarnings("unchecked")
-  public void registerMessageListenerToChannelHandler() {
+  public <Message> void unregisterMessageListener(String messageClassName,
+      SocketMessageListener<Message> socketMessageListener) {
+    Optional.ofNullable(mSocketMessageListeners.get(messageClassName))
+        .ifPresent(socketMessageListenerGroup -> {
+          socketMessageListenerGroup.removeMessageListener(socketMessageListener);
+        });
+  }
+
+  /**
+   * 更新消息监听器到ChannelHandler中
+   */
+  @SuppressWarnings("unchecked")
+  public void updateMessageListenerToChannelHandler() {
     for (Map.Entry<String, SocketMessageListenerGroup> entry : mSocketMessageListeners.entrySet()) {
       mConnectionClient.getChannelHandler().addMessageListener(entry.getKey(), entry.getValue());
     }
@@ -108,8 +125,8 @@ public class LongConnectionContext {
     return mOnConnectFailedSubject;
   }
 
-  public Subject<Boolean> getOnRemoteDisconnectSubject() {
-    return mOnRemoteDisconnectSubject;
+  public Subject<Boolean> getOnDisconnectByExceptionSubject() {
+    return mOnDisconnectByExceptionSubject;
   }
 
   public Subject<Boolean> getOnHeartbeatOvertime() {

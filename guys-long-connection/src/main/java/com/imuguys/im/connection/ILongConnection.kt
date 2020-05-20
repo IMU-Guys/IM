@@ -36,7 +36,22 @@ interface ILongConnection {
     )
 
     /**
+     * 移除消息监听器
+     * @param messageClassName 监听的消息对应的类名
+     * @param messageListener 监听器
+     */
+    fun <Message> unregisterMessageHandler(
+        messageClassName: String,
+        messageListener: SocketMessageListener<Message>
+    )
+
+    /**
      * 断开连接
      */
     fun disconnect()
+
+    /**
+     * 释放资源
+     */
+    fun release()
 }

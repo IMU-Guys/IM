@@ -51,13 +51,17 @@ class LongConnection(longConnectionParams: LongConnectionParams) : ILongConnecti
                 startHeartbeat()
             }
         // 连接断开处理
-        mDisConnectDisposable = mLongConnectionContext.onRemoteDisconnectSubject.subscribe {
-            Log.i(TAG, "remote peer reset this connection!, stop heartbeat, disconnect connection")
+        mDisConnectDisposable = mLongConnectionContext.onDisconnectByExceptionSubject.subscribe {
+            Log.i(TAG, "disconnected by exception")
             stopHeartbeat()
             disconnect()
+            connect()
         }
+        // 心跳超时
         mHeartbeatOvertimeDisposable = mLongConnectionContext.onHeartbeatOvertime.subscribe {
+            Log.i(TAG, "heart beat over time")
             stopHeartbeat()
+            disconnect()
             connect()
         }
     }
@@ -71,6 +75,10 @@ class LongConnection(longConnectionParams: LongConnectionParams) : ILongConnecti
     }
 
     private fun stopHeartbeat() {
+        mLongConnectionContext.unregisterMessageListener(
+            HeartbeatAckMessage::class.java.name,
+            mHeartbeatListener
+        )
         mLongConnectionContext.longConnectionTaskDispatcher.removeRunnable(mHeartbeatOp)
     }
 
@@ -95,19 +103,42 @@ class LongConnection(longConnectionParams: LongConnectionParams) : ILongConnecti
     ) {
         mLongConnectionContext.registerMessageListener(messageClassName, messageListener)
         mLongConnectionContext.connectionClient?.let {
-            mLongConnectionContext.registerMessageListenerToChannelHandler()
+            mLongConnectionContext.updateMessageListenerToChannelHandler()
         }
     }
 
+    override fun <Message> unregisterMessageHandler(
+        messageClassName: String,
+        messageListener: SocketMessageListener<Message>
+    ) {
+        mLongConnectionContext.unregisterMessageListener(messageClassName, messageListener)
+        mLongConnectionContext.connectionClient?.let {
+            mLongConnectionContext.updateMessageListenerToChannelHandler()
+        }
+    }
+
+    /**
+     * 断开已经建立的连接
+     */
     override fun disconnect() {
-        mConnectFailedDisposable?.dispose()
-        mConnectSuccessDisposable.dispose()
-        mLongConnectionContext.release()
         mLongConnectionContext.longConnectionTaskDispatcher.postRunnable(
             DisconnectOp(mLongConnectionContext)
         )
     }
 
+    override fun release() {
+        mConnectFailedDisposable?.dispose()
+        mConnectSuccessDisposable.dispose()
+        mLongConnectionContext.release()
+        DisconnectOp(mLongConnectionContext).run()
+        // 移除所有消息
+        mLongConnectionContext.longConnectionTaskDispatcher.removeRunnable(null)
+        mLongConnectionContext.longConnectionTaskDispatcher.stop()
+    }
+
+    /**
+     * 建立连接，如果连接失败，会有重连
+     */
     override fun connect() {
         // 重连次数
         val attemptToReconnectionCountLimit =

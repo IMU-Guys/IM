@@ -23,9 +23,9 @@ class MessageChannelHandler : SimpleChannelInboundHandler<SocketJsonMessage>() {
     /**
      * 连接断开，可能是由于服务端主动断开
      */
-    override fun channelInactive(ctx: ChannelHandlerContext?) {
-        mLongConnectionContext?.onRemoteDisconnectSubject!!.onNext(false)
-        super.channelInactive(ctx)
+    override fun exceptionCaught(ctx: ChannelHandlerContext?, cause: Throwable?) {
+        mLongConnectionContext?.onDisconnectByExceptionSubject!!.onNext(false)
+        super.exceptionCaught(ctx, cause)
     }
 
     /**
@@ -54,5 +54,11 @@ class MessageChannelHandler : SimpleChannelInboundHandler<SocketJsonMessage>() {
         messageListener: SocketMessageListener<Message>
     ) {
         mSocketMessageHandlers[messageClassName] = messageListener as SocketMessageListener<Any>
+    }
+
+    fun removeMessageListener(
+        messageClassName: String
+    ) {
+        mSocketMessageHandlers.remove(messageClassName)
     }
 }

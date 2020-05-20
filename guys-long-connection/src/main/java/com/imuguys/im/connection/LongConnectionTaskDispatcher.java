@@ -31,4 +31,8 @@ public class LongConnectionTaskDispatcher {
   public void removeRunnable(Runnable runnable) {
     mHandler.removeCallbacks(runnable);
   }
+
+  public void stop() {
+    mHandlerThread.quit();
+  }
 }

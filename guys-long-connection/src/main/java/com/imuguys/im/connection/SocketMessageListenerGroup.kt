@@ -17,4 +17,8 @@ class SocketMessageListenerGroup<Message>(messageClassName: String) :
     fun addMessageListener(messageListener: SocketMessageListener<Message>) {
         mSocketMessageListenerSet.add(messageListener)
     }
+
+    fun removeMessageListener(messageListener: SocketMessageListener<Message>) {
+        mSocketMessageListenerSet.remove(messageListener)
+    }
 }

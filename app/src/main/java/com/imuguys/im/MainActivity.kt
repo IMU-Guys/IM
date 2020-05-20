@@ -20,7 +20,7 @@ import java.lang.reflect.Field
 class MainActivity : AppCompatActivity() {
 
     private val mHandler = Handler()
-    private val messageLongConnection = LongConnection(LongConnectionParams("192.168.0.103", 8880))
+    private val messageLongConnection = LongConnection(LongConnectionParams("123.16.236.126", 8880))
     private lateinit var mMainActivityDataBinding: ActivityMainBinding
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,7 +42,7 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         mHandler.removeCallbacks(null)
-        messageLongConnection.disconnect()
+        messageLongConnection.release()
     }
 
     private fun debugLongConnection() {
