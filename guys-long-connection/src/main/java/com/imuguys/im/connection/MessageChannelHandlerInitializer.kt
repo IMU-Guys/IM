@@ -17,7 +17,6 @@ class MessageChannelHandlerInitializer : ChannelInitializer<SocketChannel>() {
             ch.pipeline().addLast(JsonObjectDecoder()) // ByteBuf to Json ByteBuf
             ch.pipeline().addLast(StringEncoder()) // Json String to ByteBuf
             ch.pipeline().addLast(SocketJsonMessageCodec()) // Json ByteBuf to POJO && POJO to Json String
-            ch.pipeline().addLast(MessageChannelHandler())
         }
     }
 }

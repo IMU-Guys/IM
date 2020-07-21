@@ -7,6 +7,6 @@ import java.io.Serializable
  * 长链接传输的Json消息
  */
 data class SocketJsonMessage(
-    @SerializedName("classType") val classType: String,
+    @SerializedName("className") val className: String,
     @SerializedName("classBytes") val classBytes: String
 ) : Serializable

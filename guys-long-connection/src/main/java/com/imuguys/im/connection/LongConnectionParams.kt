@@ -4,7 +4,7 @@ package com.imuguys.im.connection;
  * 长链接参数
  */
 // todo 因为生成的Getter/Setter会带着M，所有成员没有用m开头，以后处理
-data class LongConnectionParams(
+data class LongConnectionParams @JvmOverloads constructor(
     val host: String, // 主机名
     val port: Int, // 端口
     val attemptToReconnectionCountLimit: Int = 5, // 建立连接失败后的重连次数
